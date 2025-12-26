@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { initializeWorkspaceOnChain } from "@/lib/solana/blockchain-actions";
 
 interface CreateWorkspaceFormProps {
   organizationId: string;
@@ -27,6 +28,7 @@ export function CreateWorkspaceForm({ organizationId, slug }: CreateWorkspaceFor
 
     setIsCreating(true);
     try {
+      // Step 1: Create in database first to get workspace ID
       const result = await createWorkspace({
         name: name.trim(),
         description: description.trim() || undefined,
@@ -37,6 +39,9 @@ export function CreateWorkspaceForm({ organizationId, slug }: CreateWorkspaceFor
         toast.error(result.error || "Failed to create workspace");
         return;
       }
+
+      // Step 2: Initialize workspace on blockchain (Phantom will open)
+      await initializeWorkspaceOnChain(slug, result.data!.id, name.trim());
 
       toast.success("Workspace created successfully!");
       router.push(`/orgs/${slug}/workspaces/${result.data?.id}`);

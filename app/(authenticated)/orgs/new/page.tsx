@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { handleError } from "@/lib/error/handle";
+import { initializeOrgOnChain } from "@/lib/solana/blockchain-actions";
 
 export default function NewOrganizationPage() {
   const router = useRouter();
@@ -39,6 +40,7 @@ export default function NewOrganizationPage() {
 
     setIsCreating(true);
     try {
+      // Step 1: Create in database first
       const result = await createOrganization({
         name: name.trim(),
         slug: slug.trim(),
@@ -47,6 +49,14 @@ export default function NewOrganizationPage() {
 
       if (!result.success) {
         throw new Error(result.error);
+      }
+
+      // Step 2: Try to register on blockchain (non-blocking, optional)
+      try {
+        await initializeOrgOnChain(slug.trim());
+      } catch (blockchainError) {
+        console.log("Blockchain registration skipped:", blockchainError);
+        // Continue anyway - blockchain is optional
       }
 
       router.push(`/orgs/${result.data?.slug}`);

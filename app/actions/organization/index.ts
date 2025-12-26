@@ -515,3 +515,38 @@ export async function checkOrgRole(organizationId: string): Promise<OrgRole | nu
     return null;
   }
 }
+
+// Delete organization (owner only)
+export async function deleteOrganization(organizationId: string) {
+  try {
+    const user = await currentUser();
+    if (!user) throw new Error("Unauthorized");
+
+    // Verify user is the owner
+    const org = await database.query.organizations.findFirst({
+      where: eq(organizations.id, organizationId),
+    });
+
+    if (!org) throw new Error("Organization not found");
+    if (org.ownerId !== user.id) throw new Error("Only the owner can delete an organization");
+
+    // Delete all members first (foreign key constraint)
+    await database
+      .delete(organizationMembers)
+      .where(eq(organizationMembers.organizationId, organizationId));
+
+    // Delete audit logs
+    await database
+      .delete(auditLogs)
+      .where(eq(auditLogs.organizationId, organizationId));
+
+    // Delete the organization
+    await database
+      .delete(organizations)
+      .where(eq(organizations.id, organizationId));
+
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: parseError(error) };
+  }
+}

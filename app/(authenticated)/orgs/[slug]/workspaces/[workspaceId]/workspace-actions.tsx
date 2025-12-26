@@ -31,6 +31,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { cloneWorkspace, commitDirectlyToMain } from "@/app/actions/workspace";
 import { createPullRequest } from "@/app/actions/pull-request";
 import { handleError } from "@/lib/error/handle";
+import { createPROnChain } from "@/lib/solana/blockchain-actions";
 
 interface WorkspaceActionsProps {
   workspace: {
@@ -103,6 +104,7 @@ export function WorkspaceActions({
 
     setIsLoading(true);
     try {
+      // Step 1: Create PR in database
       const result = await createPullRequest({
         title: prTitle.trim(),
         description: prDescription.trim() || undefined,
@@ -112,6 +114,17 @@ export function WorkspaceActions({
       if (!result.success) {
         throw new Error(result.error);
       }
+
+      // Step 2: Register PR on blockchain (Phantom will open)
+      await createPROnChain(
+        slug,
+        workspace.id,
+        workspace.parentWorkspaceId!,
+        result.data!.id,
+        prTitle.trim(),
+        JSON.stringify({ version: workspace.currentVersion }),
+        JSON.stringify({ version: result.data?.targetVersion || 1 })
+      );
 
       setPrDialogOpen(false);
       // Navigate to the PR page

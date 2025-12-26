@@ -97,6 +97,8 @@ export default async function PullRequestPage({ params }: PRPageProps) {
                 slug={slug}
                 workspaceId={workspaceId}
                 showMerge
+                sourceWorkspaceId={pr.sourceWorkspaceId}
+                mergeContent={pr.sourceWorkflowContent}
               />
             )}
             {/* View source workflow button */}

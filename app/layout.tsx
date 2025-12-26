@@ -7,6 +7,7 @@ import { mono, sans, serif } from "@/lib/fonts";
 import { cn } from "@/lib/utils";
 import { PostHogProvider } from "@/providers/posthog-provider";
 import { ThemeProvider } from "@/providers/theme";
+import { SolanaWalletProvider } from "@/providers/solana-wallet";
 
 type RootLayoutProps = {
   children: ReactNode;
@@ -29,8 +30,10 @@ const RootLayout = ({ children }: RootLayoutProps) => (
           disableTransitionOnChange
           enableSystem
         >
-          <TooltipProvider>{children}</TooltipProvider>
-          <Toaster className="z-[99999999]" />
+          <SolanaWalletProvider>
+            <TooltipProvider>{children}</TooltipProvider>
+            <Toaster className="z-[99999999]" />
+          </SolanaWalletProvider>
         </ThemeProvider>
         <Analytics />
       </PostHogProvider>

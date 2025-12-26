@@ -216,6 +216,19 @@
   }
 }
 
+/* Solana Wallet Modal z-index fix */
+.wallet-adapter-modal-wrapper {
+  z-index: 99999999 !important;
+}
+
+.wallet-adapter-modal {
+  z-index: 99999999 !important;
+}
+
+.wallet-adapter-modal-overlay {
+  z-index: 99999998 !important;
+}
+
 nextjs-portal {
   @apply hidden;
 }

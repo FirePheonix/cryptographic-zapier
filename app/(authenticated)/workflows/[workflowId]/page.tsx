@@ -6,6 +6,7 @@ import { Canvas } from "@/components/canvas";
 import { Controls } from "@/components/controls";
 import { SaveIndicator } from "@/components/save-indicator";
 import { Toolbar } from "@/components/toolbar";
+import { BlockchainToolbar } from "@/components/blockchain-toolbar";
 import { WorkflowTopLeft } from "@/components/workflow-top-left";
 import { WorkflowTopRight } from "@/components/workflow-top-right";
 import { WorkflowExecutionControls } from "@/components/workflow-execution";
@@ -56,6 +57,7 @@ const WorkflowEditor = async ({ params }: WorkflowEditorProps) => {
             <Canvas>
               <Controls />
               <Toolbar />
+              <BlockchainToolbar />
               <SaveIndicator />
               <WorkflowExecutionControls workflowId={workflowId} />
             </Canvas>

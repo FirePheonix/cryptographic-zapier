@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { CheckIcon, XIcon, GitMergeIcon, Loader2Icon } from "lucide-react";
+import { CheckIcon, XIcon, GitMergeIcon, Loader2Icon, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -17,26 +17,38 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { approvePullRequest, rejectPullRequest, mergePullRequest } from "@/app/actions/pull-request";
 import { toast } from "sonner";
+import { approvePROnChain, mergePROnChain } from "@/lib/solana/blockchain-actions";
 
 interface PRActionsProps {
   prId: string;
   slug: string;
   workspaceId: string;
   showMerge?: boolean;
+  sourceWorkspaceId?: string;
+  mergeContent?: any;
+  targetVersion?: number;
 }
 
-export function PRActions({ prId, slug, workspaceId, showMerge }: PRActionsProps) {
+export function PRActions({ prId, slug, workspaceId, showMerge, sourceWorkspaceId, mergeContent, targetVersion = 1 }: PRActionsProps) {
   const router = useRouter();
   const [isApproving, setIsApproving] = useState(false);
   const [isRejecting, setIsRejecting] = useState(false);
   const [isMerging, setIsMerging] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
-  const [mergeDialogOpen, setMergeDialogOpen] = useState(false);
 
   async function handleApprove() {
     setIsApproving(true);
     try {
+      // Step 1: Record approval on blockchain
+      await approvePROnChain(
+        slug,
+        sourceWorkspaceId || workspaceId,
+        workspaceId,
+        prId
+      );
+
+      // Step 2: Approve in database
       const result = await approvePullRequest(prId);
       if (result.success) {
         toast.success("Pull request approved");
@@ -76,17 +88,34 @@ export function PRActions({ prId, slug, workspaceId, showMerge }: PRActionsProps
 
   async function handleMerge() {
     setIsMerging(true);
+    
     try {
+      // Step 1: Record merge on blockchain
+      await mergePROnChain(
+        slug,
+        sourceWorkspaceId || workspaceId,
+        workspaceId,
+        prId,
+        JSON.stringify(mergeContent || {}),
+        `Merge PR #${prId}`,
+        targetVersion + 1
+      );
+
+      // Step 2: Merge in database
       const result = await mergePullRequest(prId);
       if (result.success) {
         toast.success("Pull request merged successfully!");
-        setMergeDialogOpen(false);
         router.push(`/orgs/${slug}/workspaces/${workspaceId}`);
       } else {
         toast.error(result.error || "Failed to merge pull request");
       }
-    } catch (error) {
-      toast.error("An error occurred");
+    } catch (error: any) {
+      console.error("Merge error:", error);
+      if (error?.message?.includes("User rejected") || error?.code === 4001) {
+        toast.error("Transaction cancelled by user");
+      } else {
+        toast.error("Failed to record merge on blockchain");
+      }
     } finally {
       setIsMerging(false);
     }
@@ -94,36 +123,18 @@ export function PRActions({ prId, slug, workspaceId, showMerge }: PRActionsProps
 
   if (showMerge) {
     return (
-      <Dialog open={mergeDialogOpen} onOpenChange={setMergeDialogOpen}>
-        <DialogTrigger asChild>
-          <Button className="gap-2">
-            <GitMergeIcon className="size-4" />
-            Merge
-          </Button>
-        </DialogTrigger>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Merge Pull Request</DialogTitle>
-            <DialogDescription>
-              This will merge the changes into the target workspace and create a
-              new version. This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setMergeDialogOpen(false)}
-              disabled={isMerging}
-            >
-              Cancel
-            </Button>
-            <Button onClick={handleMerge} disabled={isMerging}>
-              {isMerging && <Loader2Icon className="mr-2 size-4 animate-spin" />}
-              Confirm Merge
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <Button 
+        className="gap-2" 
+        onClick={handleMerge}
+        disabled={isMerging}
+      >
+        {isMerging ? (
+          <Loader2Icon className="size-4 animate-spin" />
+        ) : (
+          <GitMergeIcon className="size-4" />
+        )}
+        {isMerging ? "Signing..." : "Merge"}
+      </Button>
     );
   }
 
