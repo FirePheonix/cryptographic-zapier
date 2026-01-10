@@ -19,7 +19,7 @@ const opacity = {
 
 export default function Description() {
   const phrase =
-    "Connect blockchain payments and on-chain events to real-world business workflows. No smart contracts required.";
+    "Connect blockchain payments and on-chain events to real-world business workflows. Build entire business automations—no code required.";
   const description = useRef(null);
   const isInView = useInView(description);
   return (
@@ -47,13 +47,6 @@ export default function Description() {
             );
           })}
         </p>
-        <motion.p 
-          variants={opacity} 
-          animate={isInView ? "open" : "closed"}
-          className="text-2xl md:text-xl text-gray-500 font-light leading-8 md:leading-7 border-l-[3px] border-white pl-5 mt-10"
-        >
-          Listen to wallet transactions, token transfers, and smart contract activity across chains—then trigger notifications, database updates, API calls, or service fulfillment automatically.
-        </motion.p>
       </div>
     </div>
   );

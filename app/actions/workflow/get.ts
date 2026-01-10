@@ -47,7 +47,7 @@ export const getWorkflowAction = async (
     }
 
     if (!workflow) {
-      throw new Error("Workflow not found");
+      return { workflow: null };
     }
 
     return { workflow };

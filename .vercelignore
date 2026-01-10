@@ -1,0 +1,22 @@
+.env
+.env.local
+.env*.local
+node_modules
+.turbo
+.next
+out
+dist
+.DS_Store
+*.log
+*.log.*
+.idea
+.vscode
+*.swp
+*.swo
+*~
+
+# Solana program (not needed for deployment)
+solana-program/target
+
+# Scripts
+scripts/test-agent*.ts

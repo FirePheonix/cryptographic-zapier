@@ -13,8 +13,10 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - api/webhooks/ (webhook endpoints)
+     * - api/webhook-test/ (webhook test endpoints)
+     * - api/webhook-listen/ (webhook listener endpoints)
      * Feel free to modify this pattern to include more paths.
      */
-    "/((?!_next/static|_next/image|favicon.ico|api/webhooks/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|mp3|mp4)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|api/webhooks/|api/webhook-test/|api/webhook-listen/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|mp3|mp4)$).*)",
   ],
 };

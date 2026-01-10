@@ -2,10 +2,11 @@
 import React, { useState } from "react";
 import { motion, useScroll, useMotionValueEvent } from "framer-motion";
 import Image from "next/image";
-import { Terminal, Github, Menu, X } from "lucide-react";
+import { Github, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { GetStartedButton } from "@/components/landing/get-started-button";
 
 const PrimaryButton = ({ 
   children, 
@@ -89,12 +90,22 @@ export default function Header() {
         >
           {isOpen ? <X size={28} /> : <Menu size={28} />}
         </button>
-        <div className="text-xl md:text-2xl font-medium tracking-tighter flex items-center gap-2">
-          <div className="w-8 md:w-10 aspect-square overflow-hidden relative bg-white rounded-lg flex items-center justify-center">
-            <span className="text-black font-bold text-xs md:text-sm">VF</span>
-          </div>
-          <span>Zynthex</span>
-        </div>
+        <Link href="/" className="text-xl md:text-2xl font-medium tracking-tighter flex items-center gap-2">
+          <Image
+            src="/zynthex200x200-svg.svg"
+            alt="Zynthex Logo"
+            width={40}
+            height={40}
+            className="w-8 md:w-10 h-8 md:h-10"
+          />
+          <Image
+            src="/zynthex-banner-no-bg-svg.svg"
+            alt="Zynthex"
+            width={120}
+            height={30}
+            className="h-6 md:h-7 w-auto hidden sm:block"
+          />
+        </Link>
       </div>
       <div className="hidden min-[1115px]:flex items-center gap-5 max-[1270px]:gap-4 max-[1173px]:gap-3 tracking-tight text-lg max-[1270px]:text-base max-[1173px]:text-sm font-light max-[1173px]:font-normal text-[#d1d1d1]">
         {links.map((link, index) => {
@@ -123,15 +134,9 @@ export default function Header() {
           <Github className="w-5 h-5" />
           <span className="text-sm font-medium">Star on GitHub</span>
         </Link>
-        <Link
-          href="/welcome"
-          className="cursor-pointer z-30"
-        >
-          <PrimaryButton classname="px-3 py-2 text-sm whitespace-nowrap md:px-5 md:py-3 md:text-base">
-            <Terminal className="w-4 h-4 md:w-5 md:h-5" />
-            <span>Get Started</span>
-          </PrimaryButton>
-        </Link>
+        <GetStartedButton className="px-3 py-2 text-sm whitespace-nowrap md:px-5 md:py-3 md:text-base cursor-pointer z-30">
+          Get Started
+        </GetStartedButton>
       </div>
       {isOpen && (
         <motion.div

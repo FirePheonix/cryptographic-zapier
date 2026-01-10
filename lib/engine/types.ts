@@ -15,13 +15,15 @@
 export type ProviderId = 
   | "google"
   | "openai"
+  | "anthropic"
   | "email"
   | "webhook"
   | "transform"
   | "flow"
   | "alchemy"
   | "postgres"
-  | "coingate";
+  | "coingate"
+  | "agent";
 
 /**
  * Operations available per provider
@@ -81,6 +83,11 @@ export type PostgresOperation =
   | "postgres.update"
   | "postgres.delete";
 
+export type AgentOperation =
+  | "agent.tools"
+  | "agent.planAndExecute"
+  | "agent.conversational";
+
 export type OperationId = 
   | GoogleOperation 
   | OpenAIOperation 
@@ -89,7 +96,8 @@ export type OperationId =
   | TransformOperation
   | AlchemyOperation
   | FlowOperation
-  | PostgresOperation;
+  | PostgresOperation
+  | AgentOperation;
 
 // ============================================================================
 // Credential Types

@@ -28,7 +28,7 @@ export type OrgWorkspace = {
     }>;
   } | null;
   createdAt: Date;
-  updatedAt: Date;
+  updatedAt: Date | null;
   userRole: "owner" | "reviewer" | "contributor";
 };
 

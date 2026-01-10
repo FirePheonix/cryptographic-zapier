@@ -7,7 +7,6 @@ import { getOrganizationBySlug } from "@/app/actions/organization";
 import { OrgCanvas } from "@/components/org-canvas";
 import { Controls } from "@/components/controls";
 import { OrgSaveIndicator } from "@/components/org-save-indicator";
-import { Toolbar } from "@/components/toolbar";
 import { OrgGitControls } from "@/components/org-git-controls";
 import { OrgWorkflowProvider } from "@/providers/org-workflow";
 import { NodeOutputsProvider } from "@/providers/node-outputs";
@@ -90,7 +89,6 @@ export default async function WorkspaceEditPage({ params }: WorkspaceEditPagePro
           <OrgWorkflowProvider workspace={workspaceData} slug={slug} orgId={orgResult.data.id}>
             <OrgCanvas>
               <Controls />
-              <Toolbar />
               <OrgSaveIndicator />
             </OrgCanvas>
           </OrgWorkflowProvider>

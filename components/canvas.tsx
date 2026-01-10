@@ -19,6 +19,7 @@ import {
 } from "@xyflow/react";
 import { BoxSelectIcon, PlusIcon } from "lucide-react";
 import { nanoid } from "nanoid";
+import { NodeSidebar } from "./node-sidebar";
 import type { MouseEvent, MouseEventHandler } from "react";
 import { useCallback, useState, useEffect } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
@@ -47,6 +48,8 @@ export const Canvas = ({ children, ...props }: ReactFlowProps) => {
   const workflow = useWorkflow();
   const { outputs, addOutput } = useNodeOutputs();
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarPosition, setSidebarPosition] = useState<{ x: number; y: number } | undefined>(undefined);
   const {
     onConnect,
     onEdgesChange,
@@ -492,7 +495,11 @@ export const Canvas = ({ children, ...props }: ReactFlowProps) => {
             </ReactFlow>
           </ContextMenuTrigger>
           <ContextMenuContent>
-            <ContextMenuItem onClick={addDropNode}>
+            <ContextMenuItem onClick={(e) => {
+              const rect = (e.target as HTMLElement).getBoundingClientRect();
+              setSidebarPosition({ x: rect.x, y: rect.y });
+              setSidebarOpen(true);
+            }}>
               <PlusIcon size={12} />
               <span>Add a new node</span>
             </ContextMenuItem>
@@ -506,6 +513,12 @@ export const Canvas = ({ children, ...props }: ReactFlowProps) => {
         <NodeEditorPanel
           nodeId={selectedNodeId}
           onClose={() => setSelectedNodeId(null)}
+        />
+        {/* Node sidebar */}
+        <NodeSidebar
+          isOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+          position={sidebarPosition}
         />
       </NodeDropzoneProvider>
     </NodeOperationsProvider>

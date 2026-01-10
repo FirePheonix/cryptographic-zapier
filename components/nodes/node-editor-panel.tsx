@@ -3,20 +3,24 @@
  * 
  * n8n-style modal editor that opens when clicking a node.
  * Shows: Input (left) | Configuration (middle) | Output (right)
- * Features: Click outside to close, resizable panels, Escape to close, drag & drop variables
+ * 
+ * IMPORTANT: All execution state is IN-MEMORY ONLY via useNodeOutputs.
+ * - Node outputs are NOT stored in node.data (which gets persisted)
+ * - State vanishes on tab close - this is intentional (like n8n)
  */
 
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { useReactFlow } from "@xyflow/react";
-import { X, ChevronLeft, Play, FileJson, Loader2 } from "lucide-react";
+import { useReactFlow, useNodes, useEdges } from "@xyflow/react";
+import { X, ChevronLeft, Play, FileJson, Loader2, Radio, Square, Check, Webhook } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { useNodeOutputs } from "@/providers/node-outputs";
 
 // Import drag & drop components
 import { DragProvider } from "./drag-context";
@@ -29,6 +33,17 @@ import { GmailConfig } from "./configs/gmail-config";
 import { PostgresConfig } from "./configs/postgres-config";
 import { FlowConfig } from "./configs/flow-config";
 import CoingateConfig from "./configs/coingate-config";
+import { ManualTriggerConfig } from "./configs/manual-trigger-config";
+import { WebhookTriggerConfig } from "./configs/webhook-trigger-config";
+import { RespondToWebhookConfig } from "./configs/respond-to-webhook-config";
+import { AIAgentConfig } from "./configs/ai-agent-config";
+import { AgentSubNodeConfig } from "./configs/agent-sub-node-config";
+// x402 Payment Protocol configs
+import { X402GateConfig } from "./configs/x402-gate-config";
+import { CronosPaymentConfig } from "./configs/cronos-payment-config";
+import { HttpResponseConfig } from "./configs/http-response-config";
+import { HttpRequestConfig } from "./configs/http-request-config";
+import { BlockchainAuditConfig } from "./configs/blockchain-audit-config";
 
 interface NodeEditorPanelProps {
   nodeId: string | null;
@@ -41,14 +56,24 @@ const MAX_PANEL_WIDTH = 500;
 const DEFAULT_PANEL_WIDTH = 320;
 
 export function NodeEditorPanel({ nodeId, onClose }: NodeEditorPanelProps) {
-  const { getNode, getEdges, setNodes, getNodes } = useReactFlow();
+  const { setNodes } = useReactFlow();
+  // Use reactive hooks to get updates when node data changes (e.g., selectedSubNode)
+  const nodes = useNodes();
+  const edges = useEdges();
   const [activeTab, setActiveTab] = useState<"parameters" | "settings">("parameters");
   const [inputView, setInputView] = useState<"schema" | "table" | "json">("schema");
   const [outputView, setOutputView] = useState<"schema" | "table" | "json">("schema");
   
+  // In-memory execution state - NOT persisted
+  const { getOutput, setOutput, webhookData, setWebhookData } = useNodeOutputs();
+  
   // Test execution state
   const [isTesting, setIsTesting] = useState(false);
   const [testError, setTestError] = useState<string | null>(null);
+  
+  // Webhook listening state
+  const [isListening, setIsListening] = useState(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
   
   // Resizable panel widths
   const [leftPanelWidth, setLeftPanelWidth] = useState(DEFAULT_PANEL_WIDTH);
@@ -59,8 +84,8 @@ export function NodeEditorPanel({ nodeId, onClose }: NodeEditorPanelProps) {
   const [isDraggingRight, setIsDraggingRight] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const node = nodeId ? getNode(nodeId) : null;
-  const edges = getEdges();
+  // Get node reactively from nodes array
+  const node = nodeId ? nodes.find(n => n.id === nodeId) : null;
 
   // Handle mouse move for resizing
   const handleMouseMove = useCallback((e: MouseEvent) => {
@@ -114,24 +139,112 @@ export function NodeEditorPanel({ nodeId, onClose }: NodeEditorPanelProps) {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
 
+  // Webhook listening functions - must be before early return to maintain hook order
+  // Path MUST match exactly what webhook-trigger-config.tsx displays: just the nodeId
+  const webhookPath = nodeId || "";
+  const baseUrl = typeof window !== "undefined" ? window.location.origin : "http://localhost:3000";
+  
+  const startListening = useCallback(async () => {
+    if (!webhookPath || !nodeId) {
+      return;
+    }
+    
+    setIsListening(true);
+    setWebhookData(null);
+    
+    // Clear any previous event
+    try {
+      await fetch(`${baseUrl}/api/webhook-listen/${webhookPath}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "clear" }),
+      });
+    } catch (e) {
+      console.error("Failed to clear listener:", e);
+    }
+
+    // Create abort controller for cancellation
+    abortControllerRef.current = new AbortController();
+
+    try {
+      const response = await fetch(`${baseUrl}/api/webhook-listen/${webhookPath}?timeout=60000`, {
+        signal: abortControllerRef.current.signal,
+      });
+      const result = await response.json();
+      
+      if (result.received && result.data) {
+        // Store in IN-MEMORY provider state only (not persisted)
+        setWebhookData(result.data);
+        setOutput(nodeId, "webhookTrigger", result.data);
+      }
+    } catch (error: any) {
+      if (error.name !== "AbortError") {
+        console.error("Error listening for webhook:", error);
+      }
+    } finally {
+      setIsListening(false);
+      abortControllerRef.current = null;
+    }
+  }, [baseUrl, webhookPath, nodeId, setWebhookData, setOutput]);
+
+  const stopListening = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    setIsListening(false);
+  }, []);
+
+  // Cleanup webhook listener on unmount
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
+
+  // Clear AI Agent's selectedSubNode when switching TO an AI Agent node (so it shows main config first)
+  const prevNodeIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (nodeId && nodeId !== prevNodeIdRef.current) {
+      prevNodeIdRef.current = nodeId;
+      // If this is an AI Agent node, clear selectedSubNode when first opened
+      const currentNode = nodes.find(n => n.id === nodeId);
+      if (currentNode?.type === "aiAgent" && currentNode.data?.selectedSubNode) {
+        setNodes((nds) =>
+          nds.map((n) =>
+            n.id === nodeId
+              ? { ...n, data: { ...n.data, selectedSubNode: null } }
+              : n
+          )
+        );
+      }
+    }
+  }, [nodeId, nodes, setNodes]);
+
   if (!node || !nodeId) return null;
 
-  // Get input data from connected nodes
+  // Get input data from connected nodes (from in-memory execution state)
   const inputEdges = edges.filter((e) => e.target === nodeId);
-  const inputNodes = inputEdges.map((e) => getNode(e.source)).filter(Boolean);
+  const inputNodes = inputEdges.map((e) => nodes.find(n => n.id === e.source)).filter(Boolean);
 
-  // Collect input data from all source nodes
+  // Collect input data from all source nodes (from provider, not node.data)
   const inputData = inputNodes.reduce((acc, sourceNode) => {
-    if (sourceNode?.data?.lastOutput) {
-      acc[sourceNode.id] = sourceNode.data.lastOutput;
+    if (sourceNode) {
+      const sourceOutput = getOutput(sourceNode.id);
+      if (sourceOutput?.output) {
+        acc[sourceNode.id] = sourceOutput.output;
+      }
     }
     return acc;
   }, {} as Record<string, any>);
 
-  // Get output data from this node
-  const outputData = node.data?.lastOutput || null;
+  // Get output data from this node (from provider, not node.data)
+  const currentNodeOutput = nodeId ? getOutput(nodeId) : null;
+  const outputData = currentNodeOutput?.output || null;
 
-  // Update node data
+  // Update node data (only for configuration, NOT for outputs)
   const updateNodeData = (updates: Record<string, unknown>) => {
     setNodes((nodes) =>
       nodes.map((n) =>
@@ -150,14 +263,15 @@ export function NodeEditorPanel({ nodeId, onClose }: NodeEditorPanelProps) {
     setTestError(null);
     
     try {
-      // Collect outputs from upstream nodes for the test
-      const nodeOutputs = inputNodes
-        .filter(n => n?.data?.lastOutput)
-        .map(n => ({
-          nodeId: n!.id,
-          output: n!.data!.lastOutput,
-        }));
-
+      // Collect outputs from upstream nodes for the test (from provider)
+      const nodeOutputsForTest = inputNodes
+        .map(n => {
+          if (!n) return null;
+          const output = getOutput(n.id);
+          if (!output?.output) return null;
+          return { nodeId: n.id, output: output.output };
+        })
+        .filter(Boolean) as Array<{ nodeId: string; output: unknown }>;
       // Send input data as-is (keyed by nodeId) for {{input.nodeId.field}} syntax
       // Also flatten for {{trigger.field}} syntax
       const flattenedInput = Object.values(inputData).reduce((acc, data) => {
@@ -175,15 +289,15 @@ export function NodeEditorPanel({ nodeId, onClose }: NodeEditorPanelProps) {
           nodeType,
           nodeData: node.data,
           testInput: flattenedInput,
-          nodeOutputs,
+          nodeOutputs: nodeOutputsForTest,
         }),
       });
 
       const result = await response.json();
 
       if (result.success) {
-        // Update node with the output
-        updateNodeData({ lastOutput: result.output });
+        // Store output in IN-MEMORY provider state only (not persisted)
+        setOutput(nodeId, nodeType, result.output);
       } else {
         setTestError(result.error || "Test failed");
       }
@@ -230,20 +344,22 @@ export function NodeEditorPanel({ nodeId, onClose }: NodeEditorPanelProps) {
           </div>
 
           <div className="flex items-center gap-2">
-            <Button 
-              size="sm" 
-              variant="outline" 
-              className="gap-2"
-              onClick={testStep}
-              disabled={isTesting}
-            >
-              {isTesting ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Play className="h-3.5 w-3.5" />
-              )}
-              {isTesting ? "Testing..." : "Test step"}
-            </Button>
+            {nodeType !== "webhookTrigger" && (
+              <Button 
+                size="sm" 
+                variant="outline" 
+                className="gap-2"
+                onClick={testStep}
+                disabled={isTesting}
+              >
+                {isTesting ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Play className="h-3.5 w-3.5" />
+                )}
+                {isTesting ? "Testing..." : "Test step"}
+              </Button>
+            )}
             <Button size="sm" variant="ghost" onClick={onClose}>
               <X className="h-4 w-4" />
             </Button>
@@ -267,66 +383,174 @@ export function NodeEditorPanel({ nodeId, onClose }: NodeEditorPanelProps) {
 
         {/* Main Content - 3 columns with resizable panels */}
         <div className="flex-1 flex overflow-hidden">
-          {/* Left Panel - Input */}
+          {/* Left Panel - Input (or Webhook Listener for webhook triggers) */}
           <div 
             className="flex flex-col bg-muted/20 flex-shrink-0"
             style={{ width: leftPanelWidth }}
           >
-            <div className="p-3 border-b">
-              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Input
-              </h3>
-            </div>
-            
-            {/* View Toggle */}
-            <div className="p-2 border-b flex gap-1">
-              <Button
-                variant={inputView === "schema" ? "secondary" : "ghost"}
-                size="sm"
-                className="text-xs h-7"
-                onClick={() => setInputView("schema")}
-              >
-                Schema
-              </Button>
-              <Button
-                variant={inputView === "table" ? "secondary" : "ghost"}
-                size="sm"
-                className="text-xs h-7"
-                onClick={() => setInputView("table")}
-              >
-                Table
-              </Button>
-              <Button
-                variant={inputView === "json" ? "secondary" : "ghost"}
-                size="sm"
-                className="text-xs h-7"
-                onClick={() => setInputView("json")}
-              >
-                JSON
-              </Button>
-            </div>
+            {nodeType === "webhookTrigger" ? (
+              /* Webhook Trigger - Special Left Panel */
+              <>
+                <div className="p-3 border-b flex items-center gap-2">
+                  <Webhook className="h-4 w-4 text-orange-400" />
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Pull in events from Webhook
+                  </h3>
+                </div>
+                
+                <div className="flex-1 flex flex-col p-4">
+                  {/* Listen Button */}
+                  <Button
+                    onClick={isListening ? stopListening : startListening}
+                    className={cn(
+                      "w-full h-10 font-medium mb-4",
+                      isListening 
+                        ? "bg-red-600 hover:bg-red-700 text-white" 
+                        : "bg-orange-500 hover:bg-orange-600 text-white"
+                    )}
+                  >
+                    {isListening ? (
+                      <>
+                        <Square className="w-4 h-4 mr-2 fill-current" />
+                        Stop listening
+                      </>
+                    ) : (
+                      <>
+                        <Radio className="w-4 h-4 mr-2" />
+                        Listen for test event
+                      </>
+                    )}
+                  </Button>
 
-            <div className="flex-1 overflow-auto">
-              {Object.keys(inputData).length > 0 ? (
-                <div className="p-3">
-                  {inputView === "json" ? (
-                    <pre className="text-xs font-mono bg-muted p-3 rounded-md overflow-auto">
-                      {JSON.stringify(inputData, null, 2)}
-                    </pre>
-                  ) : inputView === "schema" ? (
-                    <DraggableSchemaView data={inputData} sourceNodeId={nodeId} sourceNodeName={nodeLabel} />
-                  ) : (
-                    <TableView data={inputData} />
+                  {/* Listening indicator */}
+                  {isListening && (
+                    <div className="flex items-center gap-2 text-sm text-orange-400 bg-orange-500/10 rounded-md p-3 border border-orange-500/30 mb-4">
+                      <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" />
+                      <span>Waiting for webhook request...</span>
+                    </div>
+                  )}
+
+                  {/* Received Data */}
+                  {webhookData && !isListening && (
+                    <div className="flex-1 overflow-auto">
+                      <div className="text-sm text-green-400 bg-green-500/10 rounded-md p-3 border border-green-500/30 mb-3">
+                        <div className="flex items-center gap-2">
+                          <Check className="w-4 h-4" />
+                          <span className="font-medium">Webhook received!</span>
+                          <span className="text-xs text-green-300 ml-auto">1 item</span>
+                        </div>
+                      </div>
+                      
+                      {/* View Toggle for received data */}
+                      <div className="flex gap-1 mb-3">
+                        <Button
+                          variant={inputView === "schema" ? "secondary" : "ghost"}
+                          size="sm"
+                          className="text-xs h-7"
+                          onClick={() => setInputView("schema")}
+                        >
+                          Schema
+                        </Button>
+                        <Button
+                          variant={inputView === "table" ? "secondary" : "ghost"}
+                          size="sm"
+                          className="text-xs h-7"
+                          onClick={() => setInputView("table")}
+                        >
+                          Table
+                        </Button>
+                        <Button
+                          variant={inputView === "json" ? "secondary" : "ghost"}
+                          size="sm"
+                          className="text-xs h-7"
+                          onClick={() => setInputView("json")}
+                        >
+                          JSON
+                        </Button>
+                      </div>
+
+                      {inputView === "json" ? (
+                        <pre className="text-xs font-mono bg-muted p-3 rounded-md overflow-auto max-h-[400px]">
+                          {JSON.stringify(webhookData, null, 2)}
+                        </pre>
+                      ) : inputView === "schema" ? (
+                        <DraggableSchemaView data={webhookData} sourceNodeId={nodeId || ""} sourceNodeName="Webhook" />
+                      ) : (
+                        <TableView data={webhookData} />
+                      )}
+                    </div>
+                  )}
+
+                  {/* Instructions when not listening and no data */}
+                  {!isListening && !webhookData && (
+                    <div className="flex-1 flex flex-col items-center justify-center text-center text-muted-foreground px-4">
+                      <Webhook className="h-12 w-12 mb-4 opacity-30" />
+                      <p className="text-sm mb-2">Once you've finished building your workflow, run it without having to click this button by using the production webhook URL.</p>
+                      <a href="#" className="text-orange-400 hover:underline text-sm">More info</a>
+                    </div>
                   )}
                 </div>
-              ) : (
-                <div className="p-8 text-center text-muted-foreground">
-                  <FileJson className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">No input data available</p>
-                  <p className="text-xs mt-1">Connect this node to other nodes to see their outputs</p>
+              </>
+            ) : (
+              /* Regular Node - Standard Input Panel */
+              <>
+                <div className="p-3 border-b">
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Input
+                  </h3>
                 </div>
-              )}
-            </div>
+                
+                {/* View Toggle */}
+                <div className="p-2 border-b flex gap-1">
+                  <Button
+                    variant={inputView === "schema" ? "secondary" : "ghost"}
+                    size="sm"
+                    className="text-xs h-7"
+                    onClick={() => setInputView("schema")}
+                  >
+                    Schema
+                  </Button>
+                  <Button
+                    variant={inputView === "table" ? "secondary" : "ghost"}
+                    size="sm"
+                    className="text-xs h-7"
+                    onClick={() => setInputView("table")}
+                  >
+                    Table
+                  </Button>
+                  <Button
+                    variant={inputView === "json" ? "secondary" : "ghost"}
+                    size="sm"
+                    className="text-xs h-7"
+                    onClick={() => setInputView("json")}
+                  >
+                    JSON
+                  </Button>
+                </div>
+
+                <div className="flex-1 overflow-auto">
+                  {Object.keys(inputData).length > 0 ? (
+                    <div className="p-3">
+                      {inputView === "json" ? (
+                        <pre className="text-xs font-mono bg-muted p-3 rounded-md overflow-auto">
+                          {JSON.stringify(inputData, null, 2)}
+                        </pre>
+                      ) : inputView === "schema" ? (
+                        <DraggableSchemaView data={inputData} sourceNodeId={nodeId} sourceNodeName={nodeLabel} />
+                      ) : (
+                        <TableView data={inputData} />
+                      )}
+                    </div>
+                  ) : (
+                    <div className="p-8 text-center text-muted-foreground">
+                      <FileJson className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">No input data available</p>
+                      <p className="text-xs mt-1">Connect this node to other nodes to see their outputs</p>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
           </div>
 
           {/* Left Resize Handle */}
@@ -360,6 +584,7 @@ export function NodeEditorPanel({ nodeId, onClose }: NodeEditorPanelProps) {
               <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0">
                 <TabsContent value="parameters" className="p-4 m-0 h-full">
                   <NodeConfig
+                    nodeId={nodeId}
                     nodeType={nodeType}
                     nodeData={node.data as Record<string, unknown>}
                     onChange={updateNodeData}
@@ -555,22 +780,34 @@ function TableView({ data }: { data: any }) {
 
 // Node-specific configuration
 function NodeConfig({
+  nodeId,
   nodeType,
   nodeData,
   onChange,
   inputData,
 }: {
+  nodeId: string;
   nodeType: string;
   nodeData: Record<string, unknown>;
   onChange: (updates: Record<string, unknown>) => void;
   inputData: Record<string, any>;
 }) {
   switch (nodeType) {
+    case "manualTrigger":
+      return <ManualTriggerConfig nodeId={nodeId} data={nodeData as any} onUpdate={onChange} />;
+    case "webhookTrigger":
+      return <WebhookTriggerConfig nodeId={nodeId} data={nodeData as any} onUpdate={onChange} />;
+    case "respondToWebhook":
+      return <RespondToWebhookConfig nodeId={nodeId} data={nodeData as any} onUpdate={onChange} />;
     case "phantomWatch":
     case "metamaskWatch":
       return <PhantomConfig data={nodeData} onChange={onChange} nodeType={nodeType} />;
     case "openai":
       return <OpenAIConfig data={nodeData} onChange={onChange} inputData={inputData} />;
+    case "aiAgent":
+      return <AIAgentConfig data={nodeData} onChange={onChange} inputData={inputData} />;
+    case "agentSubNode":
+      return <AgentSubNodeConfig data={nodeData} onChange={onChange} inputData={inputData} />;
     case "gmail":
       return <GmailConfig data={nodeData} onChange={onChange} inputData={inputData} />;
     case "postgres":
@@ -580,6 +817,17 @@ function NodeConfig({
     case "coingateWebhook":
     case "coingate":
       return <CoingateConfig node={{ id: '', type: nodeType, position: { x: 0, y: 0 }, data: nodeData }} onChange={onChange} />;
+    // x402 Payment Protocol nodes
+    case "x402Gate":
+      return <X402GateConfig data={nodeData} onChange={onChange} inputData={inputData} />;
+    case "cronosPayment":
+      return <CronosPaymentConfig data={nodeData} onChange={onChange} inputData={inputData} />;
+    case "httpResponse":
+      return <HttpResponseConfig data={nodeData} onChange={onChange} inputData={inputData} />;
+    case "httpRequest":
+      return <HttpRequestConfig data={nodeData} onChange={onChange} inputData={inputData} />;
+    case "blockchainAudit":
+      return <BlockchainAuditConfig data={nodeData} onChange={onChange} inputData={inputData} />;
     default:
       return (
         <div className="text-sm text-muted-foreground">

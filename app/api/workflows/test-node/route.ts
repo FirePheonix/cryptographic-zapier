@@ -89,8 +89,13 @@ export async function POST(request: Request) {
     for (const nodeOutput of nodeOutputs) {
       context.nodeOutputs.set(nodeOutput.nodeId, {
         success: true,
-        output: nodeOutput.output,
-        metadata: {},
+        output: nodeOutput.output as Record<string, unknown>,
+        metadata: {
+          startedAt: new Date().toISOString(),
+          completedAt: new Date().toISOString(),
+          duration: 0,
+          retryCount: 0,
+        },
       });
     }
 

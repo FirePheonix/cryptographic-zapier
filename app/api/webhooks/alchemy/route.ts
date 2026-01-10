@@ -5,7 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/database";
+import { database } from "@/lib/database";
 import { workflows, workflowExecutions } from "@/schema";
 import { eq } from "drizzle-orm";
 
@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
     console.log("\n🔍 Looking up workflow...");
 
     // Get workflow to execute
-    const workflow = await db.query.workflows.findFirst({
+    const workflow = await database.query.workflows.findFirst({
       where: eq(workflows.id, workflowId),
     });
 
@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
     console.log(JSON.stringify(triggerOutput, null, 2));
 
     // Record execution start
-    const [execution] = await db
+    const [execution] = await database
       .insert(workflowExecutions)
       .values({
         workflowId: workflow.id,
@@ -140,7 +140,7 @@ export async function POST(request: NextRequest) {
     executeWorkflow(execution.id, workflowDef, triggerOutput, workflow.userId).catch(
       (error) => {
         console.error("❌ Workflow execution failed:", error);
-        db.update(workflowExecutions)
+        database.update(workflowExecutions)
           .set({
             status: "failed",
             completedAt: new Date(),
@@ -218,7 +218,7 @@ async function executeWorkflow(
       }
     } catch (error: any) {
       console.error(`Node ${node.id} failed:`, error);
-      await db
+      await database
         .update(workflowExecutions)
         .set({
           status: "failed",
@@ -231,7 +231,7 @@ async function executeWorkflow(
   }
 
   // Mark execution as completed
-  await db
+  await database
     .update(workflowExecutions)
     .set({
       status: "completed",

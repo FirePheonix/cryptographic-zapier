@@ -6,9 +6,14 @@
  */
 
 import { database } from "@/lib/database";
-import { workflows, workflowExecutions } from "@/schema";
+import { workflows, workflowExecutions, credentials } from "@/schema";
 import { eq } from "drizzle-orm";
 import { invalidateWorkflowCache } from "@/lib/redis-cache";
+import { getProviderAdapter } from "./adapters";
+import { 
+  ExecutionContext as AdapterContext, 
+  NodeExecutionResult 
+} from "./types";
 
 export interface NodeResult {
   nodeId: string;
@@ -24,6 +29,8 @@ export interface ExecutionContext {
   trigger: {
     output: any;
   };
+  nodeOutputs: Map<string, NodeExecutionResult>;
+  credentials?: Record<string, any>;
   [nodeId: string]: {
     output: any;
   };
@@ -53,7 +60,23 @@ export async function executeWorkflow(
   // Build execution context with trigger data
   const context: ExecutionContext = {
     trigger: { output: triggerOutput },
+    nodeOutputs: new Map(),
+    credentials: {},
   };
+
+  // Fetch user credentials
+  try {
+    const userCredentials = await database.query.credentials.findMany({
+      where: eq(credentials.userId, userId)
+    });
+    for (const cred of userCredentials) {
+        if (cred.provider && cred.credentials) {
+           (context.credentials as any)[cred.provider] = cred.credentials;
+        }
+    }
+  } catch (err) {
+    console.error("Failed to fetch credentials:", err);
+  }
 
   // Also add trigger data under specific keys for easy access
   if (triggerOutput.transactions?.[0]) {
@@ -101,6 +124,12 @@ export async function executeWorkflow(
         
         // Store output in context
         context[node.id] = { output };
+        context.nodeOutputs.set(node.id, {
+           success: true,
+           output: output as Record<string, unknown>,
+           logs: [],
+           triggeredAt: new Date().toISOString()
+        });
         
         // Log result
         executionLog.push({
@@ -231,25 +260,69 @@ function getNodeInput(nodeId: string, edges: any[], context: ExecutionContext): 
   
   if (incomingEdges.length === 0) {
     // No incoming edges, use trigger output
-    return context.trigger?.output || {};
+    return { 
+      trigger: context.trigger?.output,
+      nodes: {}, // Will be populated from context.nodeOutputs if needed, but for now empty
+    };
   }
-  
-  // Merge outputs from all source nodes
-  const input: any = {};
+
+  const input: any = {
+    trigger: context.trigger?.output,
+    nodes: Object.fromEntries(context.nodeOutputs?.entries() || [])
+  };
+
+  // Group edges by target handle
+  const edgesByHandle = new Map<string, any[]>();
+  const edgesWithoutHandle: any[] = [];
   
   for (const edge of incomingEdges) {
-    const sourceOutput = context[edge.source]?.output;
-    if (sourceOutput) {
-      // If there's only one source, use its output directly
-      if (incomingEdges.length === 1) {
-        return { previous: sourceOutput, ...context.trigger?.output };
-      }
-      // Otherwise merge by source node id
-      input[edge.source] = sourceOutput;
+    if (edge.targetHandle) {
+         if (!edgesByHandle.has(edge.targetHandle)) edgesByHandle.set(edge.targetHandle, []);
+         edgesByHandle.get(edge.targetHandle)?.push(edge);
+    } else {
+         edgesWithoutHandle.push(edge);
     }
   }
+
+  // Process handle-bound inputs
+  for (const [handle, handleEdges] of edgesByHandle) {
+     if (handleEdges.length === 1) {
+        // Single connection to handle -> value
+        const edge = handleEdges[0];
+        input[handle] = context[edge.source]?.output;
+     } else {
+        // Multiple connections to handle -> array? or merge?
+        // Default to array for multi-input handles
+        input[handle] = handleEdges.map(e => context[e.source]?.output);
+     }
+  }
+
+  // Process generic inputs (previous)
+  if (edgesWithoutHandle.length > 0) {
+      // If we have generic connections, we set 'previous'
+      // If single generic connection, previous = that output
+      // If multiple, previous = array or object map?
+      
+      const genericOutputs = edgesWithoutHandle.map(e => context[e.source]?.output).filter(Boolean);
+      
+      if (genericOutputs.length === 1) {
+        input.previous = genericOutputs[0];
+        // Also merge generic output properties into input root for convenience?
+        // Maybe unsafe if conflicts, but common in simple workflows
+        // Object.assign(input, genericOutputs[0]);
+      } else if (genericOutputs.length > 1) {
+        input.previous = genericOutputs;
+      }
+      
+      // Also map by source ID for specific access
+      for (const edge of edgesWithoutHandle) {
+         if (context[edge.source]?.output) {
+            input[edge.source] = context[edge.source].output;
+         }
+      }
+  }
   
-  return { ...input, trigger: context.trigger?.output };
+  return input;
 }
 
 /**
@@ -266,7 +339,72 @@ async function executeNode(
   // Interpolate variables in node data
   const interpolatedData = interpolateVariables(data, context, input);
   
+  // Merge interpolated data with input (input handles usually win or are complementary)
+  const mappedInput = { ...interpolatedData, ...input };
+
   switch (type) {
+    case "aiAgent":
+    case "ai-agent":
+      try {
+        const adapter = getProviderAdapter("agent");
+        // Create adapter-compatible context
+        const adapterContext: AdapterContext = {
+          workflowId: "unknown",
+          executionId: "unknown",
+          triggerInput: context.trigger.output,
+          nodeOutputs: context.nodeOutputs,
+          credentials: context.credentials as any
+        };
+        
+        // Log what's being passed to the agent
+        console.log("[Executor] AI Agent input:", {
+          hasSystemPrompt: !!mappedInput.systemPrompt,
+          hasDecisionMakerApiKey: !!mappedInput.decisionMakerApiKey,
+          decisionMakerProvider: mappedInput.decisionMakerProvider,
+          decisionMakerModel: mappedInput.decisionMakerModel,
+          hasChatModelConfig: !!mappedInput.chatModelConfig,
+          toolConfigsCount: mappedInput.toolConfigs?.length || 0,
+          maxIterations: mappedInput.maxIterations,
+          inputKeys: Object.keys(mappedInput)
+        });
+        
+        // Pass the Decision Maker API key from node config
+        const agentApiKey = mappedInput.decisionMakerApiKey || 
+                          mappedInput.chatModelConfig?.settings?.apiKey ||
+                          process.env.OPENAI_API_KEY;
+        
+        const result = await adapter.execute(
+          "agent.tools", 
+          mappedInput, 
+          { type: "api_key", apiKey: agentApiKey || "" } as any, 
+          adapterContext
+        );
+        return result.output || result;
+      } catch (err) {
+        console.error("AI Agent execution failed:", err);
+        throw err;
+      }
+
+    case "webhookResponse":
+    case "respondToWebhook":
+    case "respond-to-webhook":
+    case "respond":
+      try {
+        const adapter = getProviderAdapter("webhook");
+        const adapterContext: AdapterContext = {
+            workflowId: "unknown",
+            executionId: "unknown",
+            triggerInput: context.trigger.output,
+            nodeOutputs: context.nodeOutputs,
+            credentials: {} as any
+        };
+        const result = await adapter.execute("respond", mappedInput, {} as any, adapterContext);
+        return result.output;
+      } catch (err) {
+         console.error("Webhook Response failed:", err);
+         throw err;
+      }
+
     case "openai":
       return executeOpenAI(interpolatedData, input);
     

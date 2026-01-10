@@ -76,15 +76,15 @@ export async function POST(request: Request, { params }: RouteParams) {
     }
 
     // Try to fetch from cache first
-    let workflow = await getCachedWorkflow<typeof workflows.$inferSelect>(
+    let workflow: typeof workflows.$inferSelect | null = await getCachedWorkflow<typeof workflows.$inferSelect>(
       workflowId
-    );
+    ) ?? null;
 
     // If not in cache, fetch from database
     if (!workflow) {
       workflow = await database.query.workflows.findFirst({
         where: eq(workflows.id, workflowId),
-      });
+      }) ?? null;
 
       // Cache the workflow for future requests
       if (workflow) {

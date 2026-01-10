@@ -12,15 +12,26 @@ const slideUp = {
   },
 };
 
+const fadeIn = {
+  initial: { opacity: 0, y: 20 },
+  enter: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.8, ease: "easeOut", delay: 0.8 },
+  },
+};
+
 export default function Landing() {
-  const firstText = useRef(null);
-  const secondText = useRef(null);
-  const slider = useRef(null);
+  const firstText = useRef<HTMLParagraphElement | null>(null);
+  const secondText = useRef<HTMLParagraphElement | null>(null);
+  const slider = useRef<HTMLDivElement | null>(null);
+
   let xPercent = 0;
   let direction = -1;
 
   useLayoutEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
+
     gsap.to(slider.current, {
       scrollTrigger: {
         trigger: document.documentElement,
@@ -31,6 +42,7 @@ export default function Landing() {
       },
       x: "-500px",
     });
+
     requestAnimationFrame(animate);
   }, []);
 
@@ -40,10 +52,12 @@ export default function Landing() {
     } else if (xPercent > 0) {
       xPercent = -100;
     }
-    gsap.set(firstText.current, { xPercent: xPercent });
-    gsap.set(secondText.current, { xPercent: xPercent });
-    requestAnimationFrame(animate);
+
+    gsap.set(firstText.current, { xPercent });
+    gsap.set(secondText.current, { xPercent });
+
     xPercent += 0.1 * direction;
+    requestAnimationFrame(animate);
   };
 
   return (
@@ -53,6 +67,7 @@ export default function Landing() {
       animate="enter"
       className="relative flex h-screen overflow-hidden"
     >
+      {/* Background Video */}
       <video
         autoPlay
         loop
@@ -62,40 +77,56 @@ export default function Landing() {
       >
         <source src="/videos/hero-bg-video.mp4" type="video/mp4" />
       </video>
+
+      {/* Dark Overlay */}
       <div className="absolute top-0 left-0 w-full h-full bg-black/40 z-[1]" />
+
+      {/* Left Content – Zynthex Description */}
+      <motion.div
+        variants={fadeIn}
+        initial="initial"
+        animate="enter"
+        className="absolute z-[2] left-[8%] top-[30%] max-w-xl text-white"
+      >
+        <h1 className="text-5xl font-medium mb-6 leading-tight">
+          Zynthex
+        </h1>
+
+        <p className="text-lg text-white/80 mb-4">
+          Zynthex is an <span className="text-white">x402 AI Agents Automation platform</span>
+          build native to the Cronos chain that reacts instantly when money moves.
+        </p>
+
+        <p className="text-lg text-white/70 mb-6">
+          Connect wallets, payment gateways, and APIs — then automate everything
+          after a transaction: notifications, databases, analytics, and workflows.
+        </p>
+
+        <div className="flex gap-6 text-sm text-white/60">
+          <span>• Build AI Agents</span>
+          <span>• On-chain payments</span>
+          <span>• No-code workflows</span>
+        </div>
+      </motion.div>
+
+      {/* Moving Text */}
       <div className="absolute top-[calc(100vh-350px)] z-[2]">
         <div ref={slider} className="relative whitespace-nowrap">
-          <p ref={firstText} className="relative m-0 text-white text-[230px] font-medium pr-[50px]">
-            AI Crypto Automation -
+          <p
+            ref={firstText}
+            className="relative m-0 text-white text-[230px] font-medium pr-[50px]"
+          >
+            x402 Cronos Automation -
           </p>
-          <p ref={secondText} className="absolute left-full top-0 m-0 text-white text-[230px] font-medium pr-[50px]">
-            AI Crypto Automation -
+          <p
+            ref={secondText}
+            className="absolute left-full top-0 m-0 text-white text-[230px] font-medium pr-[50px]"
+          >
+            x402 Cronos Automation -
           </p>
         </div>
       </div>
-      <div 
-        data-scroll 
-        data-scroll-speed={0.1} 
-        className="absolute top-[35%] left-[65%] text-white text-2xl font-light z-[2]"
-      >
-        <svg
-          width="9"
-          height="9"
-          viewBox="0 0 9 9"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          className="scale-[2] mb-[100px]"
-        >
-          <path
-            d="M8 8.5C8.27614 8.5 8.5 8.27614 8.5 8L8.5 3.5C8.5 3.22386 8.27614 3 8 3C7.72386 3 7.5 3.22386 7.5 3.5V7.5H3.5C3.22386 7.5 3 7.72386 3 8C3 8.27614 3.22386 8.5 3.5 8.5L8 8.5ZM0.646447 1.35355L7.64645 8.35355L8.35355 7.64645L1.35355 0.646447L0.646447 1.35355Z"
-            fill="white"
-          />
-        </svg>
-        <p className="m-0 mb-2.5">Zynthex</p>
-        <p className="m-0 mb-2.5">Payments</p>
-      </div>
+
     </motion.main>
   );
 }
-
-

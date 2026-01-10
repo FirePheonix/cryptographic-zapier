@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@ai-sdk/amazon-bedrock": "^3.0.66",
+    "@ai-sdk/anthropic": "^3.0.9",
     "@ai-sdk/gateway": "^2.0.18",
     "@ai-sdk/hume": "^1.0.19",
     "@ai-sdk/lmnt": "^1.0.19",

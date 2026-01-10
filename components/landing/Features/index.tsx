@@ -1,91 +1,114 @@
 "use client";
 import { motion } from "framer-motion";
-import { useState } from "react";
-import { Wallet, Workflow, Plug, ShieldCheck, Zap, Globe } from "lucide-react";
+import { Wallet, Workflow, Plug, ShieldCheck, Zap, Globe, Link2, Bot, Coins, FileCode, Search } from "lucide-react";
+import { GlowingEffect } from "@/components/ui/glowing-effect";
+import Image from "next/image";
 
 const features = [
   {
-    title: "Multi-Wallet Monitoring",
-    description: "Listen to MetaMask, Phantom, CoinGate and more. Track transactions, token transfers, and smart contract events in real-time.",
+    icon: Coins,
+    title: "x402 Protocol Integration",
+    description: "Native support for x402 payment protocol on Cronos chain. Accept crypto payments with built-in verification and instant settlement.",
+    size: "md:col-span-1 md:row-span-2",
+    bgImage: "/features-svgs/x402-protocol-integration.svg",
+  },
+  {
     icon: Wallet,
+    title: "Multi-Wallet Support",
+    description: "Connect MetaMask, Phantom, and other popular wallets seamlessly.",
+    size: "md:col-span-1",
+    bgImage: "/features-svgs/multi-wallet-support.svg",
   },
   {
-    title: "Visual Workflow Builder",
-    description: "Zapier-style drag-and-drop interface. Connect triggers to actions without writing a single line of code.",
+    icon: Bot,
+    title: "AI-Powered Automations",
+    description: "Let AI handle your payment workflows. Smart triggers, intelligent routing, and automated responses.",
+    size: "md:col-span-1",
+    bgImage: "/features-svgs/ai-powered-automations.svg",
+  },
+  {
     icon: Workflow,
+    title: "Visual Workflow Builder",
+    description: "Drag-and-drop interface to create complex automation flows without writing code.",
+    size: "md:col-span-1 md:row-span-2",
+    bgImage: "/features-svgs/visual-workflow-builder.svg",
   },
   {
-    title: "50+ Integrations",
-    description: "Connect to Google Sheets, Gmail, Slack, Discord, databases, webhooks, and any API. Your crypto meets your stack.",
-    icon: Plug,
+    icon: Link2,
+    title: "Cronos Chain Native",
+    description: "Built specifically for Cronos ecosystem with optimized gas fees and fast finality.",
+    size: "md:col-span-1",
+    bgImage: "/features-svgs/cronos-chain-native.svg",
   },
   {
-    title: "Verifiable Execution",
-    description: "Generate tamper-proof execution receipts and audit trails. Off-chain by default, on-chain when compliance requires it.",
     icon: ShieldCheck,
+    title: "Real-Time Triggers",
+    description: "Instant webhook notifications when payments are received. Never miss a transaction.",
+    size: "md:col-span-1",
+    bgImage: "/features-svgs/real-time-triggers.svg",
   },
   {
-    title: "AI-Powered Actions",
-    description: "Use OpenAI to generate personalized emails, analyze transactions, or make intelligent decisions in your workflows.",
-    icon: Zap,
-  },
-  {
-    title: "Multi-Chain Support",
-    description: "Solana, Ethereum, Polygon, and more. One platform to automate across all major blockchain networks.",
-    icon: Globe,
+    icon: Plug,
+    title: "50+ Integrations",
+    description: "Connect to Google Sheets, Discord, Slack, Telegram, and more. Automate your entire stack.",
+    size: "md:col-span-1",
+    bgImage: "/features-svgs/50-integrations.svg",
   },
 ];
 
 export default function Features() {
-  const [activeIndex, setActiveIndex] = useState<number | null>(null);
-
   return (
-    <div className="bg-black py-[150px] md:py-20 relative overflow-hidden before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-gray-700 before:to-transparent">
-      <h2 className="text-center text-[5rem] md:text-4xl text-white mb-6 font-bold">
-        <span className="inline-block relative tracking-[0.2em] drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">
-          CAPABILITIES
-        </span>
-      </h2>
-      <p className="text-center text-xl text-[#666] mb-[80px] md:mb-[50px] max-w-[600px] mx-auto px-5">
-        Everything you need to automate crypto workflows for fast-moving teams and compliance-sensitive businesses
-      </p>
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(350px,1fr))] md:grid-cols-1 gap-8 md:gap-6 max-w-[1400px] mx-auto px-10 md:px-5">
-        {features.map((feature, index) => {
-          const Icon = feature.icon;
-          return (
-            <motion.div
-              key={index}
-              className="relative bg-gradient-to-br from-[#0a0a0a] to-black border border-[#222] p-10 md:p-8 cursor-pointer transition-all duration-300 hover:border-white hover:-translate-y-2 hover:shadow-[0_20px_40px_rgba(255,255,255,0.1)] group"
-              onMouseEnter={() => setActiveIndex(index)}
-              onMouseLeave={() => setActiveIndex(null)}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-              viewport={{ once: true }}
-            >
-              <div className="relative z-[1]">
-                <div className="w-16 h-16 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center mb-6 transition-all duration-500 group-hover:bg-white/10 group-hover:border-white/30">
-                  <Icon className="w-8 h-8 text-[#888] transition-colors duration-500 group-hover:text-white" />
-                </div>
-                <h3 className="text-2xl text-white mb-3 font-semibold tracking-wide">
-                  {feature.title}
-                </h3>
-                <p className="text-base text-[#888] leading-relaxed">
-                  {feature.description}
-                </p>
-                <motion.div
-                  className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.05),transparent)] pointer-events-none"
-                  animate={{
-                    opacity: activeIndex === index ? 1 : 0,
-                  }}
-                  transition={{ duration: 0.3 }}
+    <section className="w-full bg-black px-4 py-20 md:px-8">
+      <div className="w-full max-w-[1400px] mx-auto">
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+          {features.map((feature, index) => {
+            const Icon = feature.icon;
+            return (
+              <motion.div
+                key={index}
+                className={`relative rounded-2xl border border-[#222] bg-[#0a0a0a] p-6 md:p-8 overflow-hidden ${feature.size}`}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                viewport={{ once: true }}
+              >
+                <GlowingEffect
+                  spread={40}
+                  glow={true}
+                  disabled={false}
+                  proximity={64}
+                  inactiveZone={0.01}
+                  borderWidth={3}
                 />
-              </div>
-            </motion.div>
-          );
-        })}
+                {/* Background SVG */}
+                <div className="absolute inset-0 opacity-20 pointer-events-none">
+                  <Image
+                    src={feature.bgImage}
+                    alt=""
+                    fill
+                    className="object-cover object-center"
+                  />
+                </div>
+                {/* removed gradient ray */}
+                <div className="pointer-events-none" />
+                <div className="relative z-10 h-full flex flex-col">
+                  <div className="w-10 h-10 rounded-lg border border-[#333] bg-[#111] flex items-center justify-center mb-6">
+                    <Icon className="w-5 h-5 text-white" />
+                  </div>
+                  <h3 className="text-xl md:text-2xl font-bold text-white mb-3">
+                    {feature.title}
+                  </h3>
+                  <p className="text-sm md:text-base text-gray-400 leading-relaxed">
+                    {feature.description}
+                  </p>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
       </div>
-    </div>
+    </section>
   );
 }
 

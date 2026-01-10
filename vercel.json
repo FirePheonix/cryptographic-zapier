@@ -1,0 +1,25 @@
+{
+  "buildCommand": "pnpm build",
+  "devCommand": "pnpm dev",
+  "installCommand": "pnpm install",
+  "framework": "nextjs",
+  "regions": ["iad1"],
+  "env": {
+    "NEXT_PUBLIC_SUPABASE_URL": "@next_public_supabase_url",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "@next_public_supabase_anon_key",
+    "SUPABASE_SERVICE_ROLE_KEY": "@supabase_service_role_key",
+    "POSTGRES_URL": "@postgres_url",
+    "OPENAI_API_KEY": "@openai_api_key",
+    "GOOGLE_CLIENT_ID": "@google_client_id",
+    "GOOGLE_CLIENT_SECRET": "@google_client_secret",
+    "UPSTASH_REDIS_REST_URL": "@upstash_redis_rest_url",
+    "UPSTASH_REDIS_REST_TOKEN": "@upstash_redis_rest_token",
+    "NEXT_PUBLIC_SOLANA_PROGRAM_ID": "@next_public_solana_program_id",
+    "NEXT_PUBLIC_SOLANA_NETWORK": "@next_public_solana_network",
+    "NEXT_PUBLIC_SOLANA_RPC_URL": "@next_public_solana_rpc_url",
+    "NEXT_PUBLIC_NFT_PROGRAM_ID": "@next_public_nft_program_id",
+    "NEXT_PUBLIC_TREASURY_WALLET": "@next_public_treasury_wallet",
+    "ALCHEMY_API_KEY": "@alchemy_api_key",
+    "HELIUS_API_KEY": "@helius_api_key"
+  }
+}
