@@ -271,7 +271,7 @@ export default function DemoPage() {
                 )}
                 {logs.map((log, i) => (
                   <motion.div
-                    key={i}
+                    key={`${log}-${i}`}
                     layout
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
