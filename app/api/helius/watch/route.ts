@@ -9,19 +9,9 @@ import { NextRequest, NextResponse } from "next/server";
 
 const HELIUS_API_KEY = process.env.HELIUS_API_KEY;
 
-// Use devnet for testing, mainnet for production
-const getHeliusApiUrl = (network: string | undefined) => {
-  // Default to DEVNET for development/testing
-  const normalizedNetwork = (network || "SOLANA_DEVNET").toUpperCase();
-  console.log(`   🔍 getHeliusApiUrl: input="${network}", normalized="${normalizedNetwork}"`);
-  
-  if (normalizedNetwork.includes("DEVNET")) {
-    console.log(`   ✅ Returning DEVNET URL`);
-    return "https://api-devnet.helius-rpc.com/v0/webhooks";
-  }
-  console.log(`   ⚠️ Returning MAINNET URL`);
-  return "https://api-mainnet.helius-rpc.com/v0/webhooks";
-};
+// Helius webhook API always uses mainnet endpoint
+// The webhook TYPE determines devnet vs mainnet (enhancedDevnet, rawDevnet, etc.)
+const HELIUS_WEBHOOK_API = "https://api.helius.xyz/v0/webhooks";
 
 export async function POST(request: NextRequest) {
   try {
@@ -64,30 +54,30 @@ export async function POST(request: NextRequest) {
     const webhookUrl = `${baseUrl}/api/webhooks/helius`;
     console.log("📌 Webhook URL:", webhookUrl);
 
-    // Determine which Helius API to use based on network
-    const heliusApiUrl = getHeliusApiUrl(network);
-    console.log("🌐 Network:", network || "mainnet (default)");
-    console.log("🔗 Helius API:", heliusApiUrl);
-
     // Determine webhook type based on network
+    // Mainnet: enhanced, raw, discord
+    // Devnet: enhancedDevnet, rawDevnet, discordDevnet
     const isDevnet = (network || "SOLANA_DEVNET").toUpperCase().includes("DEVNET");
-    const webhookType = isDevnet ? "rawDevnet" : "raw";
+    const webhookType = isDevnet ? "enhancedDevnet" : "enhanced";
     
-    console.log(`   📡 Webhook type: ${webhookType} (isDevnet: ${isDevnet})`);
+    console.log("🌐 Network:", network || "devnet (default)");
+    console.log("🔗 Helius API:", HELIUS_WEBHOOK_API);
+    console.log("📋 Webhook Type:", webhookType);
 
-    // Create webhook via Helius API
+    // Create webhook via Helius API - minimal payload
+    // Only required field is webhookURL, rest are optional
     const heliusPayload = {
       webhookURL: webhookUrl,
-      transactionTypes: ["ANY"], // Watch all transaction types
+      transactionTypes: ["ANY"],
       accountAddresses: [address],
       webhookType: webhookType,
     };
 
     console.log("\n📤 Calling Helius API...");
-    console.log("   URL:", `${heliusApiUrl}?api-key=***`);
+    console.log("   URL:", `${HELIUS_WEBHOOK_API}?api-key=***`);
     console.log("   Payload:", JSON.stringify(heliusPayload, null, 2));
 
-    const response = await fetch(`${heliusApiUrl}?api-key=${HELIUS_API_KEY}`, {
+    const response = await fetch(`${HELIUS_WEBHOOK_API}?api-key=${HELIUS_API_KEY}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -146,10 +136,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "Helius API key not configured" }, { status: 500 });
     }
 
-    // Use the correct API URL based on network
-    const heliusApiUrl = getHeliusApiUrl(network || "mainnet");
-    
-    const response = await fetch(`${heliusApiUrl}/${webhookId}?api-key=${HELIUS_API_KEY}`, {
+    const response = await fetch(`${HELIUS_WEBHOOK_API}/${webhookId}?api-key=${HELIUS_API_KEY}`, {
       method: "DELETE",
     });
 

@@ -351,9 +351,11 @@ async function executeNode(
         const adapterContext: AdapterContext = {
           workflowId: "unknown",
           executionId: "unknown",
+          userId: userId,
           triggerInput: context.trigger.output,
           nodeOutputs: context.nodeOutputs,
-          credentials: context.credentials as any
+          credentials: context.credentials as any,
+          variables: {},
         };
         
         // Log what's being passed to the agent
@@ -394,9 +396,11 @@ async function executeNode(
         const adapterContext: AdapterContext = {
             workflowId: "unknown",
             executionId: "unknown",
+            userId: userId,
             triggerInput: context.trigger.output,
             nodeOutputs: context.nodeOutputs,
-            credentials: {} as any
+            credentials: {} as any,
+            variables: {},
         };
         const result = await adapter.execute("respond", mappedInput, {} as any, adapterContext);
         return result.output;
@@ -411,8 +415,19 @@ async function executeNode(
     case "email":
       return executeEmail(interpolatedData, input);
     
+    case "gmail":
+    case "gmailSend":
+      return executeGmail(interpolatedData, input, context, userId);
+    
+    case "googleSheets":
+      return executeGoogleSheets(interpolatedData, input, context, userId);
+    
     case "http":
+    case "httpRequest":
       return executeHTTP(interpolatedData, input);
+    
+    case "postgres":
+      return executePostgres(interpolatedData, input, context, userId);
     
     case "slack":
       return executeSlack(interpolatedData, input);
@@ -607,6 +622,193 @@ async function executeCode(data: any, input: any): Promise<any> {
     return fn(input, {});
   } catch (error) {
     throw new Error(`Code execution failed: ${error}`);
+  }
+}
+
+/**
+ * Execute Gmail node - send email via Google API
+ */
+async function executeGmail(
+  data: any, 
+  input: any, 
+  context: ExecutionContext,
+  userId: string
+): Promise<any> {
+  console.log(`   📧 Executing Gmail node...`);
+  
+  // Get Google OAuth credentials from context
+  const googleCreds = context.credentials?.google;
+  
+  if (!googleCreds || !googleCreds.accessToken) {
+    console.log(`   ⚠️ No Google credentials found - email will be simulated`);
+    // Return simulation for now if no credentials
+    return {
+      success: false,
+      simulated: true,
+      message: "No Google OAuth credentials connected. Please connect your Google account.",
+      to: data.to,
+      subject: data.subject,
+    };
+  }
+  
+  try {
+    const adapter = getProviderAdapter("google");
+    const adapterContext: AdapterContext = {
+      workflowId: "unknown",
+      executionId: "unknown",
+      userId: userId,
+      triggerInput: context.trigger.output,
+      nodeOutputs: context.nodeOutputs,
+      credentials: context.credentials as any,
+      variables: {},
+    };
+    
+    // Interpolate variables in email fields
+    let to = data.to || "";
+    let subject = data.subject || "";
+    let body = data.body || data.message || "";
+    
+    // Replace placeholders with input data
+    if (input.previous?.content) {
+      body = body.replace(/\{\{previous\.output\}\}/g, input.previous.content);
+      body = body.replace(/\{\{previous\.output\.content\}\}/g, input.previous.content);
+    }
+    if (input.previous) {
+      body = body.replace(/\{\{previous\}\}/g, JSON.stringify(input.previous));
+    }
+    
+    // Replace trigger data
+    if (input.trigger || context.trigger?.output) {
+      const triggerData = input.trigger || context.trigger.output;
+      body = body.replace(/\{\{trigger\.output\.amount\}\}/g, triggerData.amount?.toString() || "");
+      body = body.replace(/\{\{trigger\.output\.from\}\}/g, triggerData.from || "");
+      body = body.replace(/\{\{trigger\.output\.to\}\}/g, triggerData.to || "");
+      body = body.replace(/\{\{trigger\.output\.signature\}\}/g, triggerData.signature || "");
+    }
+    
+    const result = await adapter.execute(
+      "gmail.send",
+      { to, subject, body, html: data.html },
+      { type: "oauth2", ...googleCreds },
+      adapterContext
+    );
+    
+    console.log(`   ✅ Email sent successfully to ${to}`);
+    return result.output || result;
+  } catch (err) {
+    console.error(`   ❌ Gmail execution failed:`, err);
+    throw err;
+  }
+}
+
+/**
+ * Execute Google Sheets node
+ */
+async function executeGoogleSheets(
+  data: any,
+  input: any,
+  context: ExecutionContext,
+  userId: string
+): Promise<any> {
+  console.log(`   📊 Executing Google Sheets node...`);
+  
+  const googleCreds = context.credentials?.google;
+  
+  if (!googleCreds || !googleCreds.accessToken) {
+    console.log(`   ⚠️ No Google credentials found`);
+    return {
+      success: false,
+      simulated: true,
+      message: "No Google OAuth credentials connected. Please connect your Google account.",
+    };
+  }
+  
+  try {
+    const adapter = getProviderAdapter("google");
+    const adapterContext: AdapterContext = {
+      workflowId: "unknown",
+      executionId: "unknown",
+      userId: userId,
+      triggerInput: context.trigger.output,
+      nodeOutputs: context.nodeOutputs,
+      credentials: context.credentials as any,
+      variables: {},
+    };
+    
+    // Determine operation based on data
+    const operation = data.operation || "sheets.appendRow";
+    
+    const result = await adapter.execute(
+      operation,
+      {
+        spreadsheetId: data.spreadsheetId,
+        range: data.range || "Sheet1!A:Z",
+        values: data.values || [input.previous],
+      },
+      { type: "oauth2", ...googleCreds },
+      adapterContext
+    );
+    
+    console.log(`   ✅ Google Sheets operation completed`);
+    return result.output || result;
+  } catch (err) {
+    console.error(`   ❌ Google Sheets execution failed:`, err);
+    throw err;
+  }
+}
+
+/**
+ * Execute Postgres node
+ */
+async function executePostgres(
+  data: any,
+  input: any,
+  context: ExecutionContext,
+  userId: string
+): Promise<any> {
+  console.log(`   🐘 Executing Postgres node...`);
+  
+  try {
+    const adapter = getProviderAdapter("postgres");
+    const adapterContext: AdapterContext = {
+      workflowId: "unknown",
+      executionId: "unknown",
+      userId: userId,
+      triggerInput: context.trigger.output,
+      nodeOutputs: context.nodeOutputs,
+      credentials: context.credentials as any,
+      variables: {},
+    };
+    
+    // Use connection string from data or env
+    const connectionString = data.connectionString || process.env.POSTGRES_URL;
+    
+    if (!connectionString) {
+      throw new Error("No Postgres connection string provided");
+    }
+    
+    // Interpolate query with input data
+    let query = data.query || "";
+    if (input.previous) {
+      query = query.replace(/\{\{previous\}\}/g, JSON.stringify(input.previous));
+    }
+    
+    const result = await adapter.execute(
+      data.operation || "postgres.query",
+      {
+        connectionString,
+        query,
+        params: data.params || [],
+      },
+      { type: "api_key", apiKey: "" } as any,
+      adapterContext
+    );
+    
+    console.log(`   ✅ Postgres query executed`);
+    return result.output || result;
+  } catch (err) {
+    console.error(`   ❌ Postgres execution failed:`, err);
+    throw err;
   }
 }
 

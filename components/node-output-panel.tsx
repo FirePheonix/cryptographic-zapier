@@ -120,7 +120,7 @@ export const NodeOutputPanel = ({ outputs, onClose }: NodeOutputPanelProps) => {
 
   if (outputs.length === 0) {
     return (
-      <Panel position="top-left" className="w-80 m-4">
+      <Panel position="top-left" className="w-80 mt-16 ml-4">
         <div className="rounded-lg border bg-card p-4 shadow-lg">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
@@ -142,7 +142,7 @@ export const NodeOutputPanel = ({ outputs, onClose }: NodeOutputPanelProps) => {
   }
 
   return (
-    <Panel position="top-left" className="w-96 m-4">
+    <Panel position="top-left" className="w-96 mt-16 ml-4">
       <div className="rounded-lg border bg-card shadow-lg max-h-[80vh] flex flex-col">
         <div className="flex items-center justify-between p-4 border-b">
           <div className="flex items-center gap-2">

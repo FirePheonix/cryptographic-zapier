@@ -9,9 +9,10 @@
 
 import { useState, useEffect } from "react";
 import { useWorkflow } from "@/providers/workflow";
+import Link from "next/link";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
-import { Loader2, Rocket, Power, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Loader2, Rocket, Power, AlertCircle, CheckCircle2, History, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Tooltip,
@@ -32,11 +33,14 @@ interface DeployStatus {
     address: string;
     network: string;
   }>;
+  executionCount?: number;
+  lastExecution?: string;
 }
 
 export function DeployToggle() {
   const workflow = useWorkflow();
   const [isDeploying, setIsDeploying] = useState(false);
+  const [isTesting, setIsTesting] = useState(false);
   const [status, setStatus] = useState<DeployStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -102,6 +106,42 @@ export function DeployToggle() {
       setError(err instanceof Error ? err.message : "Unknown error");
     } finally {
       setIsDeploying(false);
+    }
+  };
+
+  const handleTest = async () => {
+    if (!workflow?.id || isTesting) return;
+
+    setIsTesting(true);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/workflows/test-trigger", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ workflowId: workflow.id }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || "Failed to test workflow");
+        return;
+      }
+
+      // Refresh status to get new execution count
+      const statusResponse = await fetch(`/api/workflows/deploy?workflowId=${workflow.id}`);
+      if (statusResponse.ok) {
+        const statusData = await statusResponse.json();
+        setStatus(statusData);
+      }
+
+      // Show success message
+      alert(data.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unknown error");
+    } finally {
+      setIsTesting(false);
     }
   };
 
@@ -179,6 +219,50 @@ export function DeployToggle() {
                     </div>
                   ))}
                 </div>
+                
+                {/* Execution stats and link */}
+                <div className="pt-2 border-t">
+                  <Link 
+                    href={`/workflows/${workflow?.id}/executions`}
+                    className="flex items-center justify-between p-2 rounded hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="flex items-center gap-2 text-xs">
+                      <History className="h-3.5 w-3.5" />
+                      <span>
+                        {status.executionCount !== undefined 
+                          ? `${status.executionCount} execution(s)` 
+                          : "View executions"}
+                      </span>
+                    </div>
+                    <ExternalLink className="h-3 w-3 text-muted-foreground" />
+                  </Link>
+                  {status.lastExecution && (
+                    <p className="text-[10px] text-muted-foreground px-2">
+                      Last run: {new Date(status.lastExecution).toLocaleString()}
+                    </p>
+                  )}
+                  
+                  {/* Test button */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full mt-2"
+                    onClick={handleTest}
+                    disabled={isTesting}
+                  >
+                    {isTesting ? (
+                      <>
+                        <Loader2 className="h-3 w-3 mr-2 animate-spin" />
+                        Running test...
+                      </>
+                    ) : (
+                      <>
+                        <Rocket className="h-3 w-3 mr-2" />
+                        Test workflow
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
             )}
 
@@ -190,12 +274,24 @@ export function DeployToggle() {
                   <li>Your workflow runs on every transaction</li>
                   <li>Emails, AI analysis, etc. trigger automatically</li>
                 </ul>
-              </div>
-            )}
-          </div>
-        </PopoverContent>
-      </Popover>
-  );
-}
-
-
+                
+                {/* Test button for non-deployed workflows too */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full mt-3"
+                  onClick={handleTest}
+                  disabled={isTesting}
+                >
+                  {isTesting ? (
+                    <>
+                      <Loader2 className="h-3 w-3 mr-2 animate-spin" />
+                      Running test...
+                    </>
+                  ) : (
+                    <>
+                      <Rocket className="h-3 w-3 mr-2" />
+                      Test workflow
+                    </>
+                  )}
+                </Button>

@@ -1,23 +1,21 @@
 "use client";
-import { useRef, useLayoutEffect } from "react";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/all";
-import { motion } from "motion/react";
+import { useRef, useLayoutEffect, useState, useEffect } from "react";
+import { motion, type Variants } from "motion/react";
 
-const slideUp = {
+const slideUp: Variants = {
   initial: { y: 300 },
   enter: {
     y: 0,
-    transition: { duration: 0.6, ease: [0.33, 1, 0.68, 1], delay: 0.3 },
+    transition: { duration: 0.6, ease: [0.33, 1, 0.68, 1] as const, delay: 0.3 },
   },
 };
 
-const fadeIn = {
+const fadeIn: Variants = {
   initial: { opacity: 0, y: 20 },
   enter: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.8, ease: "easeOut", delay: 0.8 },
+    transition: { duration: 0.8, ease: "easeOut" as const, delay: 0.8 },
   },
 };
 
@@ -25,40 +23,70 @@ export default function Landing() {
   const firstText = useRef<HTMLParagraphElement | null>(null);
   const secondText = useRef<HTMLParagraphElement | null>(null);
   const slider = useRef<HTMLDivElement | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
 
   let xPercent = 0;
   let direction = -1;
 
-  useLayoutEffect(() => {
-    gsap.registerPlugin(ScrollTrigger);
-
-    gsap.to(slider.current, {
-      scrollTrigger: {
-        trigger: document.documentElement,
-        scrub: 0.25,
-        start: 0,
-        end: window.innerHeight,
-        onUpdate: (e) => (direction = e.direction * -1),
-      },
-      x: "-500px",
-    });
-
-    requestAnimationFrame(animate);
+  useEffect(() => {
+    setIsMounted(true);
   }, []);
 
-  const animate = () => {
-    if (xPercent < -100) {
-      xPercent = 0;
-    } else if (xPercent > 0) {
-      xPercent = -100;
+  useLayoutEffect(() => {
+    // Only run on client and when mounted
+    if (!isMounted || typeof window === "undefined") {
+      return;
     }
 
-    gsap.set(firstText.current, { xPercent });
-    gsap.set(secondText.current, { xPercent });
+    // Check if refs are available before running GSAP animations
+    if (!slider.current || !firstText.current || !secondText.current) {
+      return;
+    }
 
-    xPercent += 0.1 * direction;
-    requestAnimationFrame(animate);
-  };
+    // Dynamically import GSAP to avoid SSR issues
+    const initGsap = async () => {
+      const gsap = (await import("gsap")).default;
+      const { ScrollTrigger } = await import("gsap/ScrollTrigger");
+      
+      gsap.registerPlugin(ScrollTrigger);
+
+      if (!slider.current) return;
+
+      gsap.to(slider.current, {
+        scrollTrigger: {
+          trigger: document.documentElement,
+          scrub: 0.25,
+          start: 0,
+          end: window.innerHeight,
+          onUpdate: (e) => (direction = e.direction * -1),
+        },
+        x: "-500px",
+      });
+
+      const animate = () => {
+        if (xPercent < -100) {
+          xPercent = 0;
+        } else if (xPercent > 0) {
+          xPercent = -100;
+        }
+
+        // Check refs before setting
+        if (firstText.current) {
+          gsap.set(firstText.current, { xPercent });
+        }
+        if (secondText.current) {
+          gsap.set(secondText.current, { xPercent });
+        }
+
+        xPercent += 0.1 * direction;
+        requestAnimationFrame(animate);
+      };
+
+      requestAnimationFrame(animate);
+    };
+
+    initGsap();
+  }, [isMounted]);
 
   return (
     <motion.main

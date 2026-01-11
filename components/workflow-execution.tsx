@@ -393,7 +393,7 @@ export const WorkflowExecutionControls = ({ workflowId }: { workflowId: string }
   return (
     <>
       <Panel
-        className="m-4 flex flex-col items-end gap-2"
+        className="mt-16 mr-4 flex flex-col items-end gap-2"
         position="top-right"
       >
         {/* Waiting for webhook indicator */}

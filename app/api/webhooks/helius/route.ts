@@ -14,7 +14,27 @@ import { invalidateWorkflowCache } from "@/lib/redis-cache";
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    // Handle empty body (Helius health checks)
+    const text = await request.text();
+    
+    if (!text || text.trim() === "") {
+      console.log("📡 Helius health check received (empty body)");
+      return NextResponse.json({ status: "ok", message: "Webhook receiver is healthy" });
+    }
+
+    let body;
+    try {
+      body = JSON.parse(text);
+    } catch (parseError) {
+      console.log("⚠️  Non-JSON request received:", text.substring(0, 100));
+      return NextResponse.json({ status: "ok", message: "Received non-JSON request" });
+    }
+
+    // Handle empty array (no transactions)
+    if (Array.isArray(body) && body.length === 0) {
+      console.log("📡 Empty transaction array received");
+      return NextResponse.json({ status: "ok", message: "No transactions to process" });
+    }
 
     console.log("\n");
     console.log("╔══════════════════════════════════════════════════════════════╗");
@@ -22,7 +42,7 @@ export async function POST(request: NextRequest) {
     console.log("╚══════════════════════════════════════════════════════════════╝");
 
     console.log("\n📥 Raw payload:");
-    console.log(JSON.stringify(body, null, 2));
+    console.log(JSON.stringify(body, null, 2).substring(0, 2000));
 
     // Helius sends an array of transactions
     const transactions = Array.isArray(body) ? body : [body];
@@ -122,14 +142,17 @@ async function triggerWorkflows(transactions: any[]) {
 
     console.log("🔍 Looking for workflows watching addresses:", Array.from(involvedAddresses));
 
-    // Find all workflows
-    const allWorkflows = await database.select().from(workflows);
+    // Find only DEPLOYED workflows (enabled = true)
+    const deployedWorkflows = await database
+      .select()
+      .from(workflows)
+      .where(eq(workflows.enabled, true));
     
-    console.log(`   Found ${allWorkflows.length} total workflows`);
+    console.log(`   Found ${deployedWorkflows.length} deployed workflow(s)`);
 
     let triggeredCount = 0;
 
-    for (const workflow of allWorkflows) {
+    for (const workflow of deployedWorkflows) {
       const workflowContent = workflow.content as any;
       if (!workflowContent) {
         console.log(`   ⚠️  Workflow ${workflow.id} has no content, skipping`);
