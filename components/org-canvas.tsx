@@ -35,6 +35,7 @@ import { ConnectionLine } from "./connection-line";
 import { edgeTypes } from "./edges";
 import { nodeTypes } from "./nodes";
 import { NodeOutputPanel } from "./node-output-panel";
+import { NodeSidebar } from "./node-sidebar";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -61,6 +62,8 @@ export const OrgCanvas = ({ children, ...props }: ReactFlowProps) => {
     initialEdges ?? content?.edges ?? []
   );
   const [copiedNodes, setCopiedNodes] = useState<Node[]>([]);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarPosition, setSidebarPosition] = useState<{ x: number; y: number } | undefined>(undefined);
   const {
     getEdges,
     toObject,
@@ -419,7 +422,11 @@ export const OrgCanvas = ({ children, ...props }: ReactFlowProps) => {
             </ReactFlow>
           </ContextMenuTrigger>
           <ContextMenuContent>
-            <ContextMenuItem onClick={addDropNode}>
+            <ContextMenuItem onClick={(e) => {
+              const rect = (e.target as HTMLElement).getBoundingClientRect();
+              setSidebarPosition({ x: rect.x, y: rect.y });
+              setSidebarOpen(true);
+            }}>
               <PlusIcon size={12} />
               <span>Add a new node</span>
             </ContextMenuItem>
@@ -429,6 +436,11 @@ export const OrgCanvas = ({ children, ...props }: ReactFlowProps) => {
             </ContextMenuItem>
           </ContextMenuContent>
         </ContextMenu>
+        <NodeSidebar
+          isOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+          position={sidebarPosition}
+        />
       </NodeDropzoneProvider>
     </NodeOperationsProvider>
   );

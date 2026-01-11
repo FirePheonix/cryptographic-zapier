@@ -5,12 +5,37 @@
  * - Webhook is received
  * - Node execution completes
  * - Workflow execution completes
+ * - Agent thinking/tool calls (real-time agent execution)
  */
 
 import { NextRequest } from "next/server";
+import { setBroadcastFunction } from "@/lib/broadcast";
 
 // Store active connections per workflow
 const connections = new Map<string, Set<ReadableStreamDefaultController>>();
+
+// Register the broadcast function to send events to all connected clients
+// This allows the agent adapter and other parts of the engine to broadcast events
+setBroadcastFunction((workflowId: string, event: any) => {
+  const workflowConnections = connections.get(workflowId);
+  if (!workflowConnections || workflowConnections.size === 0) {
+    return;
+  }
+  
+  const data = `data: ${JSON.stringify(event)}\n\n`;
+  const encoder = new TextEncoder();
+  const encoded = encoder.encode(data);
+  
+  // Send to all connected clients for this workflow
+  for (const controller of workflowConnections) {
+    try {
+      controller.enqueue(encoded);
+    } catch (error) {
+      // Connection closed, remove it
+      workflowConnections.delete(controller);
+    }
+  }
+});
 
 export async function GET(
   request: NextRequest,
@@ -31,8 +56,25 @@ export async function GET(
       controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "connected", workflowId })}\n\n`));
 
       console.log(`📡 SSE: Client connected to workflow ${workflowId}`);
+      
+      // Send heartbeat every 30 seconds to keep connection alive
+      const heartbeatInterval = setInterval(() => {
+        try {
+          controller.enqueue(encoder.encode(`: heartbeat\n\n`));
+        } catch {
+          clearInterval(heartbeatInterval);
+        }
+      }, 30000);
+      
+      // Store interval for cleanup
+      (controller as any)._heartbeatInterval = heartbeatInterval;
     },
     cancel(controller) {
+      // Clear heartbeat interval
+      if ((controller as any)._heartbeatInterval) {
+        clearInterval((controller as any)._heartbeatInterval);
+      }
+      
       // Remove this controller when the connection closes
       const workflowConnections = connections.get(workflowId);
       if (workflowConnections) {

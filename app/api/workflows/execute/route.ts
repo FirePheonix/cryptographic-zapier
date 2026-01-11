@@ -12,6 +12,7 @@ import { eq } from "drizzle-orm";
 import { executeWorkflow, type WorkflowContent } from "@/lib/engine/resolver";
 import { createRateLimiter, slidingWindow } from "@/lib/rate-limit";
 import { incrementUserExecutionCount } from "@/lib/redis-cache";
+import { setWebhookResponse } from "@/lib/webhook-store";
 
 // Rate limiter for manual executions: 50 per minute per user
 const executionRateLimiter = createRateLimiter({
@@ -33,6 +34,7 @@ type ExecuteRequest = {
     target: string;
   }>;
   triggerInput?: Record<string, unknown>;
+  webhookPath?: string; // For Respond to Webhook node support
 };
 
 export async function POST(request: Request) {
@@ -54,7 +56,7 @@ export async function POST(request: Request) {
     }
 
     const body: ExecuteRequest = await request.json();
-    const { workflowId, nodes, edges, triggerInput = {} } = body;
+    const { workflowId, nodes, edges, triggerInput = {}, webhookPath } = body;
 
     if (!workflowId || !nodes || !edges) {
       return NextResponse.json(
@@ -100,6 +102,43 @@ export async function POST(request: Request) {
         error: nr.result.error?.message,
         timestamp: nr.result.metadata?.startedAt || new Date().toISOString(),
       })) || [];
+
+      // Check if there's a Respond to Webhook node output and notify the webhook store
+      if (webhookPath) {
+        console.log(`[Execute] Looking for respondToWebhook node, webhookPath: ${webhookPath}`);
+        console.log(`[Execute] Node results:`, result.nodeResults?.map(nr => ({ nodeId: nr.nodeId, nodeType: nr.nodeType })));
+        
+        const respondToWebhookResult = result.nodeResults?.find(
+          nr => nr.nodeType === "respondToWebhook" && nr.result.output?.__isWebhookResponse
+        );
+        
+        console.log(`[Execute] Found respondToWebhook result:`, respondToWebhookResult ? 'yes' : 'no');
+        
+        if (respondToWebhookResult) {
+          const webhookOutput = respondToWebhookResult.result.output as {
+            __isWebhookResponse: boolean;
+            statusCode: number;
+            contentType: string;
+            headers: Record<string, string>;
+            body: unknown;
+          };
+          
+          console.log(`[Execute] Setting webhook response for path: ${webhookPath}`, webhookOutput);
+          
+          setWebhookResponse(webhookPath, {
+            statusCode: webhookOutput.statusCode,
+            headers: {
+              "content-type": webhookOutput.contentType,
+              ...webhookOutput.headers,
+            },
+            body: webhookOutput.body,
+          });
+        } else {
+          console.log(`[Execute] No respondToWebhook node found or no __isWebhookResponse flag`);
+        }
+      } else {
+        console.log(`[Execute] No webhookPath provided`);
+      }
 
       // Update execution record
       await database

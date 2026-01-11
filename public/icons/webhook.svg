@@ -1,0 +1,6 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Webhook icon - n8n style -->
+  <rect x="4" y="4" width="24" height="24" rx="4" fill="#3B82F6" fill-opacity="0.15"/>
+  <path d="M16 8C11.58 8 8 11.58 8 16C8 20.42 11.58 24 16 24C20.42 24 24 20.42 24 16" stroke="#3B82F6" stroke-width="2" stroke-linecap="round"/>
+  <path d="M24 8L24 16L16 16" stroke="#3B82F6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

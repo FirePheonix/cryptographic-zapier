@@ -7,7 +7,7 @@
     "dev:full": "concurrently -n \"Next.js,Email\" \"next dev --turbopack\" \"email dev --port 3001\"",
     "bump-deps": "npx npm-check-updates -u -x \"recharts\" && pnpm install",
     "bump-ui": "npx shadcn@latest add --all --overwrite && npx shadcn@latest migrate radix",
-    "build": "next build --turbopack",
+    "build": "next build",
     "start": "next start",
     "check": "ultracite check",
     "fix": "ultracite fix",
@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@ai-sdk/amazon-bedrock": "^3.0.66",
+    "@ai-sdk/anthropic": "^3.0.9",
     "@ai-sdk/gateway": "^2.0.18",
     "@ai-sdk/hume": "^1.0.19",
     "@ai-sdk/lmnt": "^1.0.19",

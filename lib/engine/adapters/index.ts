@@ -14,13 +14,14 @@ import { flowAdapter, FlowAdapter } from "./flow";
 import { alchemyAdapter, type AlchemyAdapter } from "./alchemy";
 import { postgresAdapter, PostgresAdapter } from "./postgres";
 import { coingateAdapter, type CoingateAdapter } from "./coingate";
+import { agentAdapter, AgentAdapter } from "./agent";
 
 // ============================================================================
 // Provider Registry
 // ============================================================================
 
 // Union type for all adapter types
-type AnyProviderAdapter = GoogleAdapter | OpenAIAdapter | EmailAdapter | WebhookAdapter | TransformAdapter | FlowAdapter | AlchemyAdapter | PostgresAdapter | CoingateAdapter;
+type AnyProviderAdapter = GoogleAdapter | OpenAIAdapter | EmailAdapter | WebhookAdapter | TransformAdapter | FlowAdapter | AlchemyAdapter | PostgresAdapter | CoingateAdapter | AgentAdapter;
 
 /**
  * Registry of all available provider adapters
@@ -35,6 +36,7 @@ providerRegistry.set("flow", flowAdapter);
 providerRegistry.set("alchemy", alchemyAdapter);
 providerRegistry.set("postgres", postgresAdapter);
 providerRegistry.set("coingate", coingateAdapter);
+providerRegistry.set("agent", agentAdapter);
 
 /**
  * Get a provider adapter by ID
@@ -80,6 +82,7 @@ export { transformAdapter } from "./transform";
 export { flowAdapter } from "./flow";
 export { alchemyAdapter } from "./alchemy";
 export { postgresAdapter } from "./postgres";
+export { agentAdapter } from "./agent";
 export { BaseProviderAdapter, makeRequest } from "./base";
 
 

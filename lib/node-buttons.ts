@@ -10,9 +10,45 @@ import {
   WalletIcon,
   DatabaseIcon,
   CoinsIcon,
+  ShieldCheckIcon,
+  SendIcon,
+  MailCheckIcon,
+  ShieldIcon,
+  MousePointerClickIcon,
+  ReplyIcon,
+  BotIcon,
 } from "lucide-react";
 
 export const nodeButtons = [
+  {
+    id: "manualTrigger",
+    label: "Manual Trigger",
+    icon: MousePointerClickIcon,
+    data: {
+      label: 'When clicking "Execute Workflow"',
+    },
+  },
+  {
+    id: "webhookTrigger",
+    label: "Webhook",
+    icon: WebhookIcon,
+    data: {
+      label: "Webhook Trigger",
+      httpMethod: "POST",
+      responseMode: "onReceived",
+    },
+  },
+  {
+    id: "respondToWebhook",
+    label: "Respond to Webhook",
+    icon: ReplyIcon,
+    data: {
+      label: "Respond to Webhook",
+      statusCode: 200,
+      contentType: "application/json",
+      respondWith: "allInputs",
+    },
+  },
   {
     id: "trigger",
     label: "Trigger (Webhook)",
@@ -49,6 +85,15 @@ export const nodeButtons = [
     icon: BrainCircuitIcon,
     data: {
       model: "gpt-4o-mini",
+    },
+  },
+  {
+    id: "aiAgent",
+    label: "AI Agent",
+    icon: BotIcon,
+    data: {
+      systemPrompt: "You are a helpful AI assistant.\nUse tools when needed to fetch data.\nNever hallucinate information.",
+      maxIterations: 10,
     },
   },
   {
@@ -103,6 +148,47 @@ export const nodeButtons = [
     id: "email",
     label: "Email (Resend)",
     icon: MailIcon,
+  },
+  // x402 Payment Protocol Nodes (Cronos)
+  {
+    id: "x402Gate",
+    label: "402 Payment Gate",
+    icon: ShieldCheckIcon,
+    data: {
+      requiredAmount: "10.0",
+      replayWindowSeconds: 300,
+      allowOverpayment: true,
+    },
+  },
+  {
+    id: "cronosPayment",
+    label: "Cronos Payment",
+    icon: SendIcon,
+    data: {
+      waitForConfirmations: 1,
+      autoRetry: false,
+    },
+  },
+  {
+    id: "httpResponse",
+    label: "HTTP Response",
+    icon: MailCheckIcon,
+    data: {
+      statusCode: 200,
+      contentType: "application/json",
+    },
+  },
+  {
+    id: "blockchainAudit",
+    label: "Blockchain Audit",
+    icon: ShieldIcon,
+    data: {
+      includeTimestamp: true,
+      includeWorkflowId: true,
+      includeExecutionId: true,
+      includePaymentProof: true,
+      attachToResponse: true,
+    },
   },
 ];
 

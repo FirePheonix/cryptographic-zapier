@@ -73,6 +73,11 @@ const nodeTypeRegistry: Map<string, NodeTypeMapping> = new Map([
   // Trigger nodes
   ["trigger", { type: "trigger", provider: "webhook", operation: "trigger" }],
   ["webhook", { type: "webhook", provider: "webhook", operation: "trigger" }],
+  ["webhookTrigger", { type: "webhookTrigger", provider: "webhook", operation: "trigger" }],
+  ["manualTrigger", { type: "manualTrigger", provider: "webhook", operation: "trigger" }],
+  
+  // Webhook response node
+  ["respondToWebhook", { type: "respondToWebhook", provider: "webhook", operation: "respond" }],
   
   // OpenAI nodes
   ["openai", { type: "openai", provider: "openai", operation: "chat.completion" }],
@@ -111,6 +116,10 @@ const nodeTypeRegistry: Map<string, NodeTypeMapping> = new Map([
   
   // HTTP nodes
   ["httpRequest", { type: "httpRequest", provider: "webhook", operation: "request" }],
+  
+  // AI Agent nodes
+  ["aiAgent", { type: "aiAgent", provider: "agent", operation: "agent.tools" as OperationId }],
+  ["ai-agent", { type: "ai-agent", provider: "agent", operation: "agent.tools" as OperationId }],
   
   // PostgreSQL nodes
   ["postgres", { type: "postgres", provider: "postgres", operation: "postgres.query" as OperationId }],
@@ -464,10 +473,13 @@ export class WorkflowResolver {
       // Interpolate variables in node config
       const interpolatedConfig = interpolateConfig(node.data, context);
       
-      // Get credentials for provider
+      // Get credentials for provider (some providers like 'agent' don't need stored credentials)
       const credentials = context.credentials.get(mapping.provider);
       
-      if (!credentials) {
+      // Providers that use inline credentials from node config (not from credential store)
+      const inlineCredentialProviders = ["agent", "flow", "webhook"];
+      
+      if (!credentials && !inlineCredentialProviders.includes(mapping.provider)) {
         throw createError(
           "MISSING_CREDENTIALS",
           `No credentials found for provider: ${mapping.provider}`,
@@ -475,11 +487,39 @@ export class WorkflowResolver {
         );
       }
       
+      // For agent provider, extract API key from node config
+      let effectiveCredentials = credentials;
+      if (mapping.provider === "agent") {
+        const agentApiKey = interpolatedConfig.decisionMakerApiKey || 
+                          interpolatedConfig.chatModelConfig?.settings?.apiKey ||
+                          process.env.OPENAI_API_KEY;
+        effectiveCredentials = { type: "api_key", apiKey: agentApiKey || "" } as any;
+      } else if (!effectiveCredentials) {
+        // Fallback for providers that don't need credentials
+        effectiveCredentials = {} as any;
+      }
+      
+      // For agent provider, merge in the workflow context (trigger, previous outputs)
+      let finalConfig = interpolatedConfig;
+      if (mapping.provider === "agent") {
+        // Add trigger and previous node outputs so agent can access them
+        // Also add nodeId for broadcast events
+        finalConfig = {
+          ...interpolatedConfig,
+          _nodeId: node.id,  // Internal field for broadcast events
+          _workflowId: context.workflowId,  // Internal field for broadcast events
+          trigger: context.trigger?.output,
+          previous: context.nodeOutputs ? Object.fromEntries(context.nodeOutputs) : {},
+          // Also add common input fields the agent looks for
+          query: context.trigger?.output?.body || context.trigger?.output,
+        };
+      }
+      
       // Execute via provider adapter
       return adapter.execute(
         mapping.operation,
-        interpolatedConfig,
-        credentials,
+        finalConfig,
+        effectiveCredentials,
         context
       );
     } catch (error) {
@@ -512,7 +552,32 @@ export class WorkflowResolver {
       if (mapping) {
         providers.add(mapping.provider);
       }
+      
+      // If this is an agent node, also load credentials for tools it uses
+      if (node.type === "aiAgent") {
+        const toolConfigs = (node.data.toolConfigs || []) as Array<{ type: string }>;
+        
+        // Map tool types to provider IDs
+        const toolProviderMap: Record<string, ProviderId> = {
+          gmailTool: "google",
+          googleSheetsTool: "google",
+          slackTool: "slack",
+          discordTool: "discord",
+          openaiTool: "openai",
+          postgresTool: "postgres",
+        };
+        
+        for (const tool of toolConfigs) {
+          const provider = toolProviderMap[tool.type];
+          if (provider) {
+            providers.add(provider);
+          }
+        }
+      }
     }
+    
+    console.log(`[Resolver] Loading credentials for providers:`, Array.from(providers));
+    console.log(`[Resolver] User ID:`, this.userId);
     
     // Load credentials for each provider
     const credentialManager = getCredentialManager();
@@ -520,13 +585,16 @@ export class WorkflowResolver {
     for (const provider of providers) {
       // First try to get from database
       let credentials = await credentialManager.getCredentials(this.userId, provider);
+      console.log(`[Resolver] Credentials for ${provider} from DB:`, credentials ? 'found' : 'not found');
       
       // Fall back to environment variables
       if (!credentials) {
         credentials = this.getEnvCredentials(provider);
+        console.log(`[Resolver] Credentials for ${provider} from env:`, credentials ? 'found' : 'not found');
       }
       
       if (credentials) {
+        console.log(`[Resolver] Setting credentials for ${provider}, type:`, (credentials as any).type);
         context.credentials.set(provider, credentials);
       }
     }
@@ -588,9 +656,9 @@ export class WorkflowResolver {
     const order: WorkflowNode[] = [];
     const visited = new Set<string>();
     
-    // Find trigger node(s)
+    // Find trigger node(s) - including webhookTrigger and manualTrigger
     const triggerNodes = nodes.filter(n => 
-      n.type === "trigger" || n.type === "webhook"
+      n.type === "trigger" || n.type === "webhook" || n.type === "webhookTrigger" || n.type === "manualTrigger"
     );
     
     if (triggerNodes.length === 0) {

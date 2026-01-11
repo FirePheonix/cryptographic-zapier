@@ -1,5 +1,5 @@
 import { Handle, Position, useReactFlow } from "@xyflow/react";
-import { CodeIcon, CopyIcon, EyeIcon, TrashIcon, PlayIcon, Loader2Icon } from "lucide-react";
+import { CodeIcon, CopyIcon, EyeIcon, TrashIcon, PlayIcon, Loader2Icon, Check, AlertTriangle } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import {
   ContextMenu,
@@ -48,11 +48,17 @@ export const NodeLayout = ({
 }: NodeLayoutProps) => {
   const { deleteElements, setCenter, getNode, updateNode } = useReactFlow();
   const { duplicateNode } = useNodeOperations();
-  const { addOutput, outputs } = useNodeOutputs();
+  const { addOutput, outputs, nodeExecutionStates } = useNodeOutputs();
   const [showData, setShowData] = useState(false);
   const [showTestResult, setShowTestResult] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; output?: unknown; error?: string } | null>(null);
   const [isTesting, setIsTesting] = useState(false);
+
+  // Get execution state from in-memory provider
+  const executionState = nodeExecutionStates.get(id) || "idle";
+  const isRunning = executionState === "running";
+  const isCompleted = executionState === "completed";
+  const isError = executionState === "error";
 
   const handleFocus = () => {
     const node = getNode(id);
@@ -151,6 +157,29 @@ export const NodeLayout = ({
       <ContextMenu onOpenChange={handleSelect}>
         <ContextMenuTrigger>
           <div className="relative size-full h-auto w-sm">
+            {/* Green spinning loader overlay when running */}
+            {isRunning && (
+              <div className="absolute inset-0 flex items-center justify-center rounded-[28px] bg-black/40 z-20">
+                <Loader2Icon className="w-10 h-10 text-green-500 animate-spin" />
+              </div>
+            )}
+            
+            {/* Execution status indicator */}
+            {isCompleted && (
+              <div className="absolute -top-2 -right-2 z-20">
+                <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center shadow-lg">
+                  <Check className="w-4 h-4 text-white" />
+                </div>
+              </div>
+            )}
+            {isError && (
+              <div className="absolute -top-2 -right-2 z-20">
+                <div className="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center shadow-lg">
+                  <AlertTriangle className="w-4 h-4 text-white" />
+                </div>
+              </div>
+            )}
+            
             {type !== "drop" && (
               <div className="-translate-y-full -top-2 absolute right-0 left-0 flex shrink-0 items-center justify-between">
                 <p className="font-mono text-muted-foreground text-xs tracking-tighter">
@@ -160,7 +189,8 @@ export const NodeLayout = ({
             )}
             <div
               className={cn(
-                "node-container flex size-full flex-col divide-y rounded-[28px] bg-card p-2 ring-1 ring-border transition-all",
+                "node-container flex size-full flex-col divide-y rounded-[28px] bg-card p-2 ring-1 transition-all",
+                isCompleted ? "ring-green-500" : isError ? "ring-red-500" : "ring-border",
                 className
               )}
             >

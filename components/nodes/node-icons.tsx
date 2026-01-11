@@ -5,7 +5,7 @@
  */
 
 import Image from "next/image";
-import { Mail, Bot, Settings } from "lucide-react";
+import { Mail, Bot, Settings, MousePointerClick } from "lucide-react";
 
 interface NodeIconProps {
   type: string;
@@ -117,6 +117,16 @@ export function CoingateIcon({ size = 24 }: { size?: number }) {
 
 export function NodeIconComponent({ type, size = 24 }: NodeIconProps) {
   switch (type) {
+    case "manualTrigger":
+      return (
+        <Image
+          src="/workflow-svgs/start-trigger.svg"
+          alt="Manual Trigger"
+          width={size}
+          height={size}
+          priority
+        />
+      );
     case "phantomWatch":
       return <PhantomIcon size={size} />;
     case "metamaskWatch":
@@ -147,6 +157,26 @@ export function NodeIconComponent({ type, size = 24 }: NodeIconProps) {
           <rect x="10" y="10" width="4" height="4" fill="currentColor" opacity="0.7" />
           <rect x="16" y="10" width="4" height="4" fill="currentColor" opacity="0.7" />
         </svg>
+      );
+    case "x402Gate":
+      return (
+        <Image
+          src="/workflow-svgs/x402.svg"
+          alt="x402 Payment Gate"
+          width={size}
+          height={size}
+          priority
+        />
+      );
+    case "aiAgent":
+      return (
+        <Image
+          src="/workflow-svgs/agent.svg"
+          alt="AI Agent"
+          width={size}
+          height={size}
+          priority
+        />
       );
     default:
       return <Settings size={size} />;

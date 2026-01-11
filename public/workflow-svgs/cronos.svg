@@ -1,0 +1,14 @@
+<svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M50 0L93.3013 25V75L50 100L6.69873 75V25L50 0Z" fill="white"/>
+<path d="M50 14L81.1769 32V68L50 86L18.8231 68V32L50 14Z" fill="black"/>
+<path d="M50 14L81.1769 32V68L50 86L18.8231 68V32L50 14Z" fill="black" fill-opacity="0.2"/>
+<path d="M50 27L69.9186 38.5V61.5L50 73L30.0814 61.5V38.5L50 27Z" fill="white"/>
+<path d="M50 36L62.1244 43V57L50 64L37.8756 57V43L50 36Z" fill="black"/>
+<path d="M50 36L62.1244 43V57L50 64L37.8756 57V43L50 36Z" fill="black" fill-opacity="0.2"/>
+<rect x="62" y="43" width="11" height="14" fill="black"/>
+<rect x="62" y="43" width="11" height="14" fill="black" fill-opacity="0.2"/>
+<rect width="11" height="6.34072" transform="matrix(0.725343 -0.688387 -0.688387 -0.725343 65.3652 48.1719)" fill="black"/>
+<rect width="11" height="6.34072" transform="matrix(0.725343 -0.688387 -0.688387 -0.725343 65.3652 48.1719)" fill="black" fill-opacity="0.2"/>
+<rect x="65.3652" y="52" width="11" height="6.34072" transform="rotate(43.5026 65.3652 52)" fill="black"/>
+<rect x="65.3652" y="52" width="11" height="6.34072" transform="rotate(43.5026 65.3652 52)" fill="black" fill-opacity="0.2"/>
+</svg>

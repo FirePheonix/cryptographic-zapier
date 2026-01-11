@@ -21,6 +21,7 @@ export class WebhookAdapter extends BaseProviderAdapter {
   readonly providerId = "webhook" as const;
   readonly supportedOperations: OperationId[] = [
     "trigger",
+    "respond",
     "request",
   ];
   
@@ -30,9 +31,11 @@ export class WebhookAdapter extends BaseProviderAdapter {
     credentials: Credentials,
     context: ExecutionContext
   ): Promise<Record<string, unknown>> {
-    switch (operation as WebhookOperation) {
+    switch (operation as WebhookOperation | "respond") {
       case "trigger":
         return this.trigger(input, context);
+      case "respond":
+        return this.respond(input, context);
       case "request":
         return this.httpRequest(input);
       default:
@@ -55,6 +58,61 @@ export class WebhookAdapter extends BaseProviderAdapter {
       success: true,
       ...context.triggerInput,
       triggeredAt: new Date().toISOString(),
+    };
+  }
+
+  /**
+   * Respond to webhook - prepares response data
+   * The actual HTTP response is sent by the API route
+   */
+  private async respond(
+    input: Record<string, unknown>,
+    context: ExecutionContext
+  ): Promise<Record<string, unknown>> {
+    const {
+      statusCode = 200,
+      responseBody,
+      respondWith = "allInputs",
+      headers = {},
+    } = input;
+
+    // Determine what to send in the response
+    let body: unknown = responseBody;
+    
+    // Get all node outputs as array
+    const nodeOutputsArray = Array.from(context.nodeOutputs.values());
+    
+    if (respondWith === "allInputs" || respondWith === "allIncomingItems") {
+      // Get all previous outputs, fallback to trigger input
+      body = nodeOutputsArray.length > 0 
+        ? nodeOutputsArray.map(o => o.output)
+        : context.triggerInput || {};
+    } else if (respondWith === "firstInput" || respondWith === "firstIncomingItem") {
+      const firstOutput = nodeOutputsArray[0];
+      body = firstOutput?.output || context.triggerInput || {};
+    } else if (respondWith === "lastInput" || respondWith === "lastIncomingItem") {
+      const lastOutput = nodeOutputsArray[nodeOutputsArray.length - 1];
+      body = lastOutput?.output || context.triggerInput || {};
+    } else if (respondWith === "noData") {
+      body = {};
+    }
+    // "custom" / "customBody" uses responseBody as-is
+
+    // Store the response in context for the API route to use
+    (context as any)._webhookResponse = {
+      statusCode,
+      body,
+      headers,
+    };
+
+    return {
+      __isWebhookResponse: true, // Flag for the execute API to detect
+      success: true,
+      statusCode,
+      contentType: (headers as Record<string, string>)?.["content-type"] || "application/json",
+      body,
+      headers,
+      respondedAt: new Date().toISOString(),
     };
   }
   

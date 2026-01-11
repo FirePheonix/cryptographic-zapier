@@ -104,8 +104,26 @@ async function executeNode(
 ): Promise<{ output: unknown; error?: string }> {
   switch (node.type) {
     case "trigger":
-      // Trigger node just passes through the input
-      return { output: context.triggerInput };
+    case "manualTrigger":
+      // Trigger nodes pass through the input (empty {} for manual trigger)
+      return { output: context.triggerInput || {} };
+
+    case "webhookTrigger":
+      // Webhook trigger passes through request data (body, query, headers, method)
+      return { 
+        output: {
+          body: context.triggerInput.body || {},
+          query: context.triggerInput.query || {},
+          headers: context.triggerInput.headers || {},
+          method: context.triggerInput.method || "POST",
+          path: context.triggerInput.path || "",
+          ...context.triggerInput,
+        }
+      };
+
+    case "respondToWebhook":
+      // This node prepares the response data - actual HTTP response is handled by the API route
+      return executeRespondToWebhookNode(node, context);
 
     case "openai":
       return executeOpenAINode(node, context);
@@ -331,6 +349,101 @@ async function executeGoogleSheetsNode(
 }
 
 /**
+ * Execute Respond to Webhook node
+ * Prepares the HTTP response data that will be sent back to the caller
+ */
+async function executeRespondToWebhookNode(
+  node: WorkflowNode,
+  context: ExecutionContext
+): Promise<{ output: unknown; error?: string }> {
+  try {
+    const data = node.data as {
+      statusCode?: number;
+      contentType?: string;
+      responseBody?: string;
+      headers?: Array<{ key: string; value: string }>;
+      respondWith?: string;
+    };
+
+    const statusCode = data.statusCode || 200;
+    const contentType = data.contentType || "application/json";
+    const respondWith = data.respondWith || "allInputs";
+    
+    // Build custom headers
+    const customHeaders: Record<string, string> = {};
+    if (data.headers) {
+      for (const header of data.headers) {
+        if (header.key) {
+          customHeaders[header.key] = header.value;
+        }
+      }
+    }
+
+    // Determine response body based on respondWith setting
+    let responseBody: unknown;
+    
+    switch (respondWith) {
+      case "firstInput":
+        // Get first item from previous output
+        if (Array.isArray(context.previousOutput)) {
+          responseBody = context.previousOutput[0];
+        } else {
+          responseBody = context.previousOutput;
+        }
+        break;
+        
+      case "allInputs":
+        // Return all items (wrap in array if not already)
+        responseBody = Array.isArray(context.previousOutput) 
+          ? context.previousOutput 
+          : [context.previousOutput];
+        break;
+        
+      case "custom":
+        // Use custom response body (with variable interpolation)
+        if (data.responseBody) {
+          const interpolated = interpolateVariables(data.responseBody, context);
+          try {
+            // Try to parse as JSON if it looks like JSON
+            if (contentType === "application/json") {
+              responseBody = JSON.parse(interpolated);
+            } else {
+              responseBody = interpolated;
+            }
+          } catch {
+            responseBody = interpolated;
+          }
+        } else {
+          responseBody = {};
+        }
+        break;
+        
+      case "noData":
+        responseBody = null;
+        break;
+        
+      default:
+        responseBody = context.previousOutput;
+    }
+
+    return {
+      output: {
+        __isWebhookResponse: true,
+        statusCode,
+        contentType,
+        headers: customHeaders,
+        body: responseBody,
+      },
+    };
+  } catch (error) {
+    return {
+      output: null,
+      error: error instanceof Error ? error.message : "Respond to Webhook error",
+    };
+  }
+}
+
+/**
  * Get Google access token from service account credentials using JWT
  * This is a simplified implementation that creates a JWT token for Google API auth
  */
@@ -407,8 +520,8 @@ function buildExecutionOrder(
   const order: WorkflowNode[] = [];
   const visited = new Set<string>();
 
-  // Find the trigger node
-  const triggerNode = nodes.find((n) => n.type === "trigger");
+  // Find the trigger node (manual trigger or webhook trigger)
+  const triggerNode = nodes.find((n) => n.type === "trigger" || n.type === "manualTrigger" || n.type === "webhookTrigger");
   if (!triggerNode) {
     throw new Error("Workflow must have a trigger node");
   }

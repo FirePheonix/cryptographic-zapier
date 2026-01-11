@@ -61,6 +61,16 @@ export const DEFAULT_RATE_LIMITS: Record<ProviderId, RateLimitConfig> = {
     windowMs: 60000,
     retryAfterMs: 1000,
   },
+  agent: {
+    maxRequests: 50, // AI Agent can make multiple LLM calls per execution
+    windowMs: 60000,
+    retryAfterMs: 5000,
+  },
+  anthropic: {
+    maxRequests: 60,
+    windowMs: 60000,
+    retryAfterMs: 10000,
+  },
 };
 
 /**
