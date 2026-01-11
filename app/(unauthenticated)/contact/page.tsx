@@ -5,7 +5,7 @@ import { Mail, Globe, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import Footer from "@/components/landing/Footer/index";
+import Footer from "@/components/landing/Footer";
 import Header from "@/components/landing/Header";
 
 export default function ContactPage() {
