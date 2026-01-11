@@ -232,3 +232,46 @@
 nextjs-portal {
   @apply hidden;
 }
+
+
+@layer utilities {
+  
+  .container:has(#features-page) {
+    max-width: 100vw !important;
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+
+  .container:has(#features-page) > :not(#features-page) {
+    display: none !important;
+  }
+
+  
+  #features-page footer > div {
+    max-width: 1400px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    
+    padding-left: 80px !important; 
+    padding-right: 40px !important; 
+  }
+
+  
+  @media (min-width: 1024px) {
+    #features-page footer .grid {
+      display: grid !important;
+      grid-template-columns: repeat(4, 1fr) !important;
+      gap: 40px !important;
+    }
+  }
+  
+  
+  @media (max-width: 768px) {
+    #features-page footer > div {
+      padding-left: 20px !important;
+      padding-right: 20px !important;
+    }
+  }
+}

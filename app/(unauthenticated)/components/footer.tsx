@@ -13,12 +13,8 @@ export const Footer = () => (
     </div>
 
     {/* Top row */}
-    <div className="border-b border-dotted" />
-    <div className="border-x border-b border-dotted py-6" />
-    <div className="border-b border-dotted" />
 
-    {/* Middle row - main content */}
-    <div className="border-b border-dotted" />
+    
     <div className="relative flex items-center justify-center border-x border-b border-dotted">
       {/* Corner decorations */}
       <div className="-left-[3px] -top-[3px] absolute">
@@ -34,37 +30,9 @@ export const Footer = () => (
         <div className="relative z-1 h-[5px] w-[5px] transform rounded-full bg-border ring-2 ring-background" />
       </div>
 
-      {/* Main content */}
-      <div className="flex flex-col items-center justify-center px-5 py-16">
-        <h2 className="mb-5 text-center font-medium text-3xl tracking-[-0.12rem] md:text-5xl">
-          Automate crypto payments <LocalTime />
-        </h2>
 
-        <p className="max-w-2xl text-center text-lg text-muted-foreground tracking-[-0.01rem]">
-          Start automating your crypto payment workflows with AI. Monitor wallets, process transactions, send notifications.
-        </p>
-
-        <div className="mt-8 flex flex-col items-center justify-center gap-4 md:flex-row">
-          <Button asChild className="w-full sm:w-auto" size="lg">
-            <Link href="/auth/sign-up">Get started for free</Link>
-          </Button>
-          <Button
-            asChild
-            className="w-full sm:w-auto"
-            size="lg"
-            variant="outline"
-          >
-            <Link href="/auth/login">Login</Link>
-          </Button>
-        </div>
-      </div>
     </div>
-    <div className="border-b border-dotted" />
-
-    {/* Spacer */}
-    <div className="h-16" />
-    <div className="border-x border-dotted" />
-    <div className="" />
+    
   </div>
 );
 

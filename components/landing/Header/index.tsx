@@ -61,12 +61,12 @@ export default function Header() {
   });
 
   const links = [
-    { name: "Features", href: "/#features" },
-    { name: "Demo", href: "/#demo" },
-    { name: "How it works", href: "/#how-it-works" },
-    { name: "Pricing", href: "/#pricing" },
-    { name: "Contact", href: "/#contact" },
-    { name: "FAQ", href: "/#faq" },
+    { name: "Features", href: "/features" },
+    { name: "Demo", href: "/demo" },
+    { name: "How it works", href: "/how-it-works" },
+    { name: "Pricing", href: "/pricing" },
+    { name: "Contact", href: "/contact" },
+    { name: "FAQ", href: "/faq" },
   ];
 
   return (

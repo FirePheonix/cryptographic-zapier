@@ -1,35 +1,22 @@
-import Link from "next/link";
-import { Logo } from "@/components/logo";
-import { Button } from "@/components/ui/button";
-import { currentUser } from "@/lib/auth";
+"use client";
 
-export const Header = async () => {
-  const user = await currentUser();
+import React from "react";
+// Import the floating header from your landing components
+import Header from "@/components/landing/Header/index"; 
+import Footer from "@/components/landing/Footer/index";
 
+export default function PricingPage() {
   return (
-    <header className="flex items-center justify-between px-8">
-      <Link className="flex items-center gap-2" href="/">
-        <Logo className="h-6 w-auto" />
-        <span className="font-medium text-xl tracking-tight">zynthex</span>
-      </Link>
-      <div className="flex items-center gap-2">
-        {user ? (
-          <Button asChild variant="outline">
-            <Link href="/">Go to app</Link>
-          </Button>
-        ) : (
-          <>
-            <Button asChild variant="outline">
-              <Link href="/auth/login">Login</Link>
-            </Button>
-            <Button asChild>
-              <Link href="/auth/sign-up">Sign up</Link>
-            </Button>
-          </>
-        )}
-      </div>
-    </header>
+    <div className="min-h-screen w-full bg-black text-white selection:bg-[#6E532A]/30 flex flex-col">
+      {/* This renders the floating bar exactly as it appears on the home page */}
+      <Header /> 
+
+      <main className="flex-1 max-w-[1400px] w-full mx-auto px-4 md:px-8 py-20 mt-10">
+        <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-white text-center">
+          Pricing
+        </h1>
+        {/* Your Page Content Here */}
+      </main>
+    </div>
   );
-};
-
-
+}

@@ -19,7 +19,7 @@ const opacity = {
 
 export default function Description() {
   const phrase =
-    "Connect blockchain payments and on-chain events to real-world business workflows. Build entire business automations—no code required.";
+    "Connect blockchain payments and on-chain events to real-world business workflows. Build entire business automations — no code required.";
   const description = useRef(null);
   const isInView = useInView(description);
   return (

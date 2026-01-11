@@ -121,8 +121,8 @@ export default function Landing() {
         </h1>
 
         <p className="text-lg text-white/80 mb-4">
-          Zynthex is an <span className="text-white">x402 AI Agents Automation platform</span>
-          build native to the Cronos chain that reacts instantly when money moves.
+          Zynthex is an <span className="text-white">AI Agents Automation platform</span>
+          build native to the Crytp-Payments chain that reacts instantly when money moves.
         </p>
 
         <p className="text-lg text-white/70 mb-6">
@@ -144,13 +144,13 @@ export default function Landing() {
             ref={firstText}
             className="relative m-0 text-white text-[230px] font-medium pr-[50px]"
           >
-            x402 Cronos Automation -
+            AI-Powered Automation -
           </p>
           <p
             ref={secondText}
             className="absolute left-full top-0 m-0 text-white text-[230px] font-medium pr-[50px]"
           >
-            x402 Cronos Automation -
+            AI-Powered Automation -
           </p>
         </div>
       </div>

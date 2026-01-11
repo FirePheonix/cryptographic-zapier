@@ -7,8 +7,8 @@ import Image from "next/image";
 const features = [
   {
     icon: Coins,
-    title: "x402 Protocol Integration",
-    description: "Native support for x402 payment protocol on Cronos chain. Accept crypto payments with built-in verification and instant settlement.",
+    title: "Flow based Automations for Crypto Payments",
+    description: "Accept crypto payments with built-in verification and instant settlement.",
     size: "md:col-span-1 md:row-span-2",
     bgImage: "/features-svgs/x402-protocol-integration.svg",
   },
@@ -35,8 +35,8 @@ const features = [
   },
   {
     icon: Link2,
-    title: "Cronos Chain Native",
-    description: "Built specifically for Cronos ecosystem with optimized gas fees and fast finality.",
+    title: "AI Automated Chain Native",
+    description: "Built for Crypto ecosystem with optimized gas fees and fast finality.",
     size: "md:col-span-1",
     bgImage: "/features-svgs/cronos-chain-native.svg",
   },
