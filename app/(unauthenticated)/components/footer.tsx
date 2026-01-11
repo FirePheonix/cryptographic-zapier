@@ -13,12 +13,8 @@ export const Footer = () => (
     </div>
 
     {/* Top row */}
-    <div className="border-b border-dotted" />
-    <div className="border-x border-b border-dotted py-6" />
-    <div className="border-b border-dotted" />
 
-    {/* Middle row - main content */}
-    <div className="border-b border-dotted" />
+    
     <div className="relative flex items-center justify-center border-x border-b border-dotted">
       {/* Corner decorations */}
       <div className="-left-[3px] -top-[3px] absolute">
@@ -36,12 +32,7 @@ export const Footer = () => (
 
 
     </div>
-    <div className="border-b border-dotted" />
-
-    {/* Spacer */}
-    <div className="h-16" />
-    <div className="border-x border-dotted" />
-    <div className="" />
+    
   </div>
 );
 
