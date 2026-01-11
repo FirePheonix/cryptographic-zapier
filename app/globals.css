@@ -244,9 +244,7 @@ nextjs-portal {
   }
 
 
-  .container:has(#features-page) > :first-child,
-  .container:has(#features-page) > .relative.grid,
-  .container:has(#features-page) > :last-child {
+  .container:has(#features-page) > :not(#features-page) {
     display: none !important;
   }
 
