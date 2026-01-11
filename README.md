@@ -3,6 +3,7 @@
 - [Business Plan](docs/BUSINESS_PLAN.md)
 - [Contributions](docs/Contributions.md)
 - [Research Notes](docs/research-notes.md)
+- [Teamwork for project](docs/Teamwork%20for%20project.md)
 
 <div align="center">
   <img
