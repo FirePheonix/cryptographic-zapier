@@ -50,7 +50,7 @@ export default function FAQPage() {
             const isOpen = openIndex === index;
             return (
               <div 
-                key={index} 
+                key={faq.question}
                 className={cn(
                   "rounded-2xl border transition-all duration-200 overflow-hidden",
                   isOpen ? "bg-[#0A0A0A] border-[#6E532A]/30" : "bg-[#0A0A0A] border-white/5 hover:border-white/10"
