@@ -6,10 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import Footer from "@/components/landing/Footer/index";
+import Header from "@/components/landing/Header";
 
 export default function ContactPage() {
   return (
     <div className="min-h-screen w-full bg-black text-white selection:bg-[#6E532A]/30 flex flex-col pt-20">
+      <Header />
       <main className="flex-1 max-w-[1200px] w-full mx-auto px-4 md:px-8 py-12 grid grid-cols-1 lg:grid-cols-2 gap-16">
         <div className="space-y-8">
           <h1 className="text-5xl font-bold tracking-tight">Connect with us</h1>

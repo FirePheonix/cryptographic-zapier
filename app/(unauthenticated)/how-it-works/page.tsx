@@ -2,7 +2,7 @@
 
 import React from "react";
 import { motion } from "framer-motion";
-import { Wallet, Zap, Box, ArrowRight } from "lucide-react";
+import { Wallet, Zap, Box } from "lucide-react";
 import Footer from "@/components/landing/Footer/index";
 import { cn } from "@/lib/utils";
 
