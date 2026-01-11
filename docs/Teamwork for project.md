@@ -1,14 +1,14 @@
 ## 1. Teamwork Based on group and individual research:
 
-**When the world was planning New Year parties, Shubham was deploying new APIs at 2:47 AM.**![When the world was planning New Year parties, Shubham was deploying new APIs at 2:47 AM.](readme-images/Shubham_ai_agent.png)
+**When the world was planning New Year parties, Shubham was deploying new APIs at 2:47 AM.**![When the world was planning New Year parties, Shubham was deploying new APIs at 2:47 AM.](https://github.com/QuantumDev-CERN/test/blob/a1a7150f61d8045efa600079f3cc5a635283b4db/Shubham_ai_agent.png)
 
-**Aditya and Utkarsh predicting merge conflicts in advance… because everyone knows Git never forgives and never forgets.**![Aditya and Utkarsh predicting merge conflicts in advance… because everyone knows Git never forgives and never forgets.](readme-images/Merge_conflict.png)
+**Aditya and Utkarsh predicting merge conflicts in advance… because everyone knows Git never forgives and never forgets.**![Aditya and Utkarsh predicting merge conflicts in advance… because everyone knows Git never forgives and never forgets.](https://github.com/QuantumDev-CERN/test/blob/a1a7150f61d8045efa600079f3cc5a635283b4db/Merge_conflict.png)
 
-**Jami plotting the roadmap that quietly dragged the project to where it stands today.**![Jami plotting the roadmap that quietly dragged the project to where it stands today.](readme-images/Jami.png)
+**Jami plotting the roadmap that quietly dragged the project to where it stands today.**![Jami plotting the roadmap that quietly dragged the project to where it stands today.](https://github.com/QuantumDev-CERN/test/blob/a1a7150f61d8045efa600079f3cc5a635283b4db/Jami.png)
 
-**The rare eureka moment: Utkarsh finalized the design and the entire team collectively said, “Yep. That’s it.**![The rare eureka moment: Utkarsh finalized the design and the entire team collectively said, “Yep. That’s it.](readme-images/utkarsh.png)
+**The rare eureka moment: Utkarsh finalized the design and the entire team collectively said, “Yep. That’s it.**![The rare eureka moment: Utkarsh finalized the design and the entire team collectively said, “Yep. That’s it.](https://github.com/QuantumDev-CERN/test/blob/a1a7150f61d8045efa600079f3cc5a635283b4db/utkarsh.png)
 
-**While others debate which series to binge next, Shubham and Aditya debate security flaws and scalability limits.**![While others debate which series to binge next, Shubham and Aditya debate security flaws and scalability limits.](readme-images/call.png)
+**While others debate which series to binge next, Shubham and Aditya debate security flaws and scalability limits.**![While others debate which series to binge next, Shubham and Aditya debate security flaws and scalability limits.](https://github.com/QuantumDev-CERN/test/blob/a1a7150f61d8045efa600079f3cc5a635283b4db/call.png)
 
 - This project is the result of everyone giving their best — even when it meant one more cup of coffee.
 - Our team ran on coffee, commits, and conversations at 3 AM.

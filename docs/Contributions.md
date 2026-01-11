@@ -6,7 +6,7 @@ Impact on project:
 - Shubham turned the architecture into reality by implementing high-performance APIs, caching layers, and load balancing.
 - Dedication you can measure in commits and coffee cups.
 
-![Boosting Team moral in crucial time](readme-images/shubham.png)
+![Boosting Team moral in crucial time](https://github.com/QuantumDev-CERN/test/blob/a1a7150f61d8045efa600079f3cc5a635283b4db/shubham.png)
 
 -------------------------------------------------------------------------------------------------------------------------
 
@@ -17,7 +17,7 @@ Impact on project:
 - Utkarsh didn’t just design the interface he named the vision: Zynthax.
 - Utkarsh treated UI like strategy, not decoration,analysing user impact and retentivity.
 
-![Design Decision ](readme-images/utkarsh.png)
+![Design Decision ](https://github.com/QuantumDev-CERN/test/blob/a1a7150f61d8045efa600079f3cc5a635283b4db/utkarsh.png)
 
 -----------------------------------------------------------------------------------------------------------------------------
 
