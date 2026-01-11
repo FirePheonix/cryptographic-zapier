@@ -216,17 +216,20 @@ Pricing scales by:
 
 ---
 
-## 10. Market Opportunity
+## 10. Market Scope
 
-- Crypto payments adoption is increasing
-- Automation tools are already proven SaaS businesses
-- Payment operations remain fragmented
+- Crypto payments adoption is increasing but there are no automation tools that can connect just by  wallet  address and can trigger your nodes .
+- Zynthax is the trader’s edge — track fund flows, follow big players, and act before the market does.
+- Turn their on-chain activity into data-backed trading decisions.
+- **From whale wallets to your next trade Zynthax connects the dots.**
+- If your **DAO** still tracks salaries manually, it’s already outdated. Zynthax brings payroll, records, and communication into one flow.
 
 Zynthex sits at the intersection of:
 - Payments
 - Automation
 - AI
 - SaaS operations
+- Informed Crypto Trading Decisions
 
 ---
 
@@ -234,7 +237,10 @@ Zynthex sits at the intersection of:
 
 - Crypto payments are becoming mainstream
 - Teams want fewer custom scripts
+- No transparent and loggable workflows available in market for crypto transactions.
 - No dominant “Zapier for crypto payments” exists
-- AI reduces friction in workflow creation
+- Crypto activity is moving faster than human workflows.
+- Zynthax as it provide immutable logs and commit history of workflows for crypto transactions.
 
 ---
+
